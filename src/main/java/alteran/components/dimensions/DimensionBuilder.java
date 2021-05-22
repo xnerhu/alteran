@@ -92,6 +92,7 @@ public class DimensionBuilder {
 
     IServerConfiguration serverConfig = server.getWorldData();
     DimensionGeneratorSettings dimensionGeneratorSettings = serverConfig.worldGenSettings();
+
     // this next line registers the Dimension
     dimensionGeneratorSettings.dimensions().register(dimensionKey, dimension, Lifecycle.experimental());
     DerivedWorldInfo derivedWorldInfo = new DerivedWorldInfo(serverConfig, serverConfig.overworldData());

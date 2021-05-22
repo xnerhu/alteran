@@ -2,6 +2,7 @@ package alteran.commands;
 
 import alteran.common.AlteranCommon;
 import alteran.components.dimensions.DimensionId;
+import alteran.components.dimensions.DimensionStorage;
 import alteran.components.space.SpaceSystemManager;
 import com.mojang.brigadier.Command;
 import com.mojang.brigadier.CommandDispatcher;
@@ -31,11 +32,14 @@ public class CommandTpDim implements Command<CommandSource> {
     double x = player.position().x();
     double z = player.position().z();
 
-    World world = SpaceSystemManager.get().getDimWorld(name);
-    if (world == null) {
-      AlteranCommon.logger.error("Can't find dimension '" + name + "'!");
-      return 0;
-    }
+    //    DimensionStorage mgr = DimensionStorage.get(context.getSource().getLevel());
+
+    //    mgr.getData(new ResourceLocation(AlteranCommon.modId, name));
+    //    World world = SpaceSystemManager.get().getDimWorld(name);
+    //    if (world == null) {
+    //      AlteranCommon.logger.error("Can't find dimension '" + name + "'!");
+    //      return 0;
+    //    }
 
     DimensionId id = DimensionId.fromResourceLocation(new ResourceLocation(AlteranCommon.modId, name));
     //    World world = SpaceSystemManager.get().getDimWorld(name);
