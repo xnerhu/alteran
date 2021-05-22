@@ -1,5 +1,6 @@
-package alteran.dimensions;
+package alteran.components.space.worldgen;
 
+import alteran.components.space.SpaceSystemSettings;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.block.BlockState;
@@ -17,25 +18,18 @@ import net.minecraft.world.gen.WorldGenRegion;
 import net.minecraft.world.gen.feature.structure.StructureManager;
 import net.minecraft.world.gen.settings.DimensionStructuresSettings;
 
-public class VoidChunkGenerator extends ChunkGenerator {
+public class SpaceSystemChunkGenerator extends ChunkGenerator {
+  public static final Codec<SpaceSystemChunkGenerator> CODEC = RecordCodecBuilder.create(instance -> instance.group(RegistryLookupCodec.create(Registry.BIOME_REGISTRY).forGetter(SpaceSystemChunkGenerator::getBiomesRegistry), SpaceSystemSettings.SETTINGS_CODEC.fieldOf("settings").forGetter(SpaceSystemChunkGenerator::getSpaceDimensionSettings)).apply(instance, SpaceSystemChunkGenerator::new));
 
-  protected final DimensionSettings settings;
+  protected final SpaceSystemSettings settings;
 
-  public static final Codec<VoidChunkGenerator> CODEC = RecordCodecBuilder.create(instance -> instance.group(RegistryLookupCodec.create(Registry.BIOME_REGISTRY).forGetter(VoidChunkGenerator::getBiomeRegistry), DimensionSettings.SETTINGS_CODEC.fieldOf("settings").forGetter(VoidChunkGenerator::getSettingsxd)).apply(instance, VoidChunkGenerator::new));
-
-  public VoidChunkGenerator(MinecraftServer server, DimensionSettings settings) {
+  public SpaceSystemChunkGenerator(MinecraftServer server, SpaceSystemSettings settings) {
     this(server.registryAccess().registryOrThrow(Registry.BIOME_REGISTRY), settings);
   }
 
-  public VoidChunkGenerator(Registry<Biome> registry, DimensionSettings settings) {
-    super(new VoidBiomeProvider(registry), new DimensionStructuresSettings(false));
+  public SpaceSystemChunkGenerator(Registry<Biome> registry, SpaceSystemSettings settings) {
+    super(new SpaceSystemBiomeProvider(registry), new DimensionStructuresSettings(false));
     this.settings = settings;
-  }
-
-  public Registry<Biome> getBiomeRegistry() {
-    return ((VoidBiomeProvider) biomeSource).getBiomeRegistry();
-    //    return ((RFTBiomeProvider)biomeProvider).getBiomeRegistry();
-
   }
 
   @Override
@@ -43,13 +37,17 @@ public class VoidChunkGenerator extends ChunkGenerator {
     return CODEC;
   }
 
-  public DimensionSettings getSettingsxd() {
+  public Registry<Biome> getBiomesRegistry() {
+    return ((SpaceSystemBiomeProvider) biomeSource).getBiomesRegistry();
+  }
+
+  public SpaceSystemSettings getSpaceDimensionSettings() {
     return settings;
   }
 
   @Override
-  public ChunkGenerator withSeed(long p_230349_1_) {
-    return new VoidChunkGenerator(getBiomeRegistry(), getSettingsxd());
+  public ChunkGenerator withSeed(long seed) {
+    return new SpaceSystemChunkGenerator(getBiomesRegistry(), getSpaceDimensionSettings());
   }
 
   @Override

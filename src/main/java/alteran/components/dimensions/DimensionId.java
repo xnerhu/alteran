@@ -1,4 +1,4 @@
-package alteran.dimensions;
+package alteran.components.dimensions;
 
 import net.minecraft.network.PacketBuffer;
 import net.minecraft.server.MinecraftServer;

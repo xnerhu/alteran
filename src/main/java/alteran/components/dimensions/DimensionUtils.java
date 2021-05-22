@@ -1,4 +1,4 @@
-package alteran.dimensions;
+package alteran.components.dimensions;
 
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.math.BlockPos;
@@ -6,10 +6,7 @@ import net.minecraft.world.World;
 import net.minecraft.world.server.ServerWorld;
 import net.minecraftforge.fml.server.ServerLifecycleHooks;
 
-public class WorldTools {
-  public WorldTools() {
-  }
-
+public class DimensionUtils {
   public static boolean isLoaded(World world, BlockPos pos) {
     return world != null && pos != null ? world.isLoaded(pos) : false;
   }

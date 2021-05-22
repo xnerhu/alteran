@@ -1,5 +1,6 @@
-package alteran.dimensions;
+package alteran.components.dimensions;
 
+import alteran.common.AlteranCommon;
 import net.minecraft.nbt.CompoundNBT;
 import net.minecraft.nbt.INBT;
 import net.minecraft.nbt.ListNBT;
@@ -11,28 +12,28 @@ import javax.annotation.Nonnull;
 import java.util.HashMap;
 import java.util.Map;
 
-public class PersistantDimensionManager extends AbstractWorldData<PersistantDimensionManager> {
+public class DimensionStorage extends AbstractWorldData<DimensionStorage> {
   private static final String NAME = "AlteranDimensions";
 
   private final Map<ResourceLocation, DimensionData> data = new HashMap<>();
-  private final Map<DimensionDescriptor, DimensionData> dataByDescriptor = new HashMap<>();
+  //  private final Map<DimensionDescriptor, DimensionData> dataByDescriptor = new HashMap<>();
 
-  public PersistantDimensionManager(String name) {
+  public DimensionStorage(String name) {
     super(name);
   }
 
   @Nonnull
-  public static PersistantDimensionManager get(World world) {
-    return getData(world, () -> new PersistantDimensionManager(NAME), NAME);
+  public static DimensionStorage get(World world) {
+    return getData(world, () -> new DimensionStorage(NAME), NAME);
   }
 
   public DimensionData getData(ResourceLocation id) {
     return data.get(id);
   }
 
-  public DimensionData getData(DimensionDescriptor descriptor) {
-    return dataByDescriptor.get(descriptor);
-  }
+  //  public DimensionData getData(DimensionDescriptor descriptor) {
+  //    return dataByDescriptor.get(descriptor);
+  //  }
 
   public Map<ResourceLocation, DimensionData> getData() {
     return data;
@@ -41,7 +42,7 @@ public class PersistantDimensionManager extends AbstractWorldData<PersistantDime
   // No error checking! It is assumed the caller checks before!
   public void register(DimensionData dd) {
     data.put(dd.getId(), dd);
-    dataByDescriptor.put(dd.getDescriptor(), dd);
+    //    dataByDescriptor.put(dd.getDescriptor(), dd);
     this.setDirty();
   }
 
@@ -49,7 +50,7 @@ public class PersistantDimensionManager extends AbstractWorldData<PersistantDime
     DimensionData dd = data.get(key);
     data.remove(key);
     if (dd != null) {
-      dataByDescriptor.remove(dd.getDescriptor());
+      //      dataByDescriptor.remove(dd.getDescriptor());
     }
     this.setDirty();
   }
@@ -58,12 +59,13 @@ public class PersistantDimensionManager extends AbstractWorldData<PersistantDime
   public void load(CompoundNBT tag) {
     ListNBT dimensions = tag.getList("dimensions", Constants.NBT.TAG_COMPOUND);
     data.clear();
-    dataByDescriptor.clear();
+    //    dataByDescriptor.clear();
     for (INBT inbt : dimensions) {
       CompoundNBT dtag = (CompoundNBT) inbt;
       DimensionData dd = new DimensionData(dtag);
+      //      AlteranCommon.logger.error("XDDDDDDDDDDDDDDDDDDDDDDDDDDDDD" + dd.getId().toString());
       data.put(dd.getId(), dd);
-      dataByDescriptor.put(dd.getDescriptor(), dd);
+      //      dataByDescriptor.put(dd.getDescriptor(), dd);
     }
   }
 

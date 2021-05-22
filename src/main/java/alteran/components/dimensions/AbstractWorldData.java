@@ -1,4 +1,4 @@
-package alteran.dimensions;
+package alteran.components.dimensions;
 
 import net.minecraft.world.World;
 import net.minecraft.world.storage.DimensionSavedDataManager;
@@ -21,7 +21,7 @@ public abstract class AbstractWorldData<T extends AbstractWorldData<T>> extends 
     if (world.isClientSide) {
       throw new RuntimeException("Don't access this client-side!");
     } else {
-      DimensionSavedDataManager storage = WorldTools.getOverworld(world).getDataStorage();
+      DimensionSavedDataManager storage = DimensionUtils.getOverworld(world).getDataStorage();
       return storage.computeIfAbsent(supplier, name);
     }
   }

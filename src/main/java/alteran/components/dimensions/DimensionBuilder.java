@@ -1,4 +1,4 @@
-package alteran.dimensions;
+package alteran.components.dimensions;
 
 import alteran.network.AlteranNetwork;
 import alteran.network.packets.PacketDimensionUpdate;
@@ -7,14 +7,12 @@ import com.google.common.collect.ImmutableList;
 import com.mojang.serialization.Lifecycle;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.RegistryKey;
-import net.minecraft.util.Util;
 import net.minecraft.util.registry.Registry;
 import net.minecraft.world.Dimension;
 import net.minecraft.world.World;
 import net.minecraft.world.biome.BiomeManager;
 import net.minecraft.world.border.IBorderListener;
 import net.minecraft.world.chunk.listener.IChunkStatusListener;
-import net.minecraft.world.chunk.listener.IChunkStatusListenerFactory;
 import net.minecraft.world.gen.settings.DimensionGeneratorSettings;
 import net.minecraft.world.server.ServerWorld;
 import net.minecraft.world.storage.DerivedWorldInfo;
@@ -29,9 +27,7 @@ import java.util.concurrent.Executor;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
-// Kindly copied and adapted from Hyperbox (Commoble). Thanks a lot for this!
-public class DimensionHelper {
-
+public class DimensionBuilder {
   //  public static final Function<MinecraftServer, IChunkStatusListenerFactory> CHUNK_STATUS_LISTENER_FACTORY_FIELD = ReflectionHelper.getInstanceFieldGetter(MinecraftServer.class, "field_213220_d");
   public static final Function<MinecraftServer, Executor> BACKGROUND_EXECUTOR_FIELD = ReflectionUtils.getInstanceFieldGetter(MinecraftServer.class, "field_213217_au");
   public static final Function<MinecraftServer, SaveFormat.LevelSave> ANVIL_CONVERTER_FOR_ANVIL_FILE_FIELD = ReflectionUtils.getInstanceFieldGetter(MinecraftServer.class, "storageSource");
