@@ -1,9 +1,11 @@
 package alteran;
 
+import alteran.commands.AlteranCommands;
 import alteran.common.AlteranCommon;
 import net.minecraft.block.Block;
 import net.minecraft.block.Blocks;
 import net.minecraftforge.common.MinecraftForge;
+import net.minecraftforge.event.RegisterCommandsEvent;
 import net.minecraftforge.event.RegistryEvent;
 import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
@@ -20,16 +22,21 @@ import org.apache.logging.log4j.Logger;
 
 import java.util.stream.Collectors;
 
-@Mod(AlteranCommon.MOD_ID)
+@Mod(AlteranCommon.modID)
 public class Alteran {
   public Alteran() {
     IEventBus modBus = FMLJavaModLoadingContext.get().getModEventBus();
     IEventBus forgeBus = MinecraftForge.EVENT_BUS;
 
     modBus.addListener(this::onCommonSetup);
+    forgeBus.addListener(this::serverLoad);
   }
 
   public void onCommonSetup(FMLCommonSetupEvent e) {
 
+  }
+
+  public void serverLoad(RegisterCommandsEvent event) {
+    AlteranCommands.register(event.getDispatcher());
   }
 }
