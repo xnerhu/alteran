@@ -59,7 +59,7 @@ public class Alteran {
 
 				@Override
 				public ISkyRenderHandler getSkyRenderHandler() {
-					return new RenderSpaceSky();
+					return RenderSpaceSky.getInstance();
 				}
 
 				@Override
