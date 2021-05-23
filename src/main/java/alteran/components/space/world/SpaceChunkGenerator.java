@@ -1,4 +1,4 @@
-package alteran.components.space.worldgen;
+package alteran.components.space.world;
 
 import alteran.components.space.SpaceSystemSettings;
 import com.mojang.serialization.Codec;
@@ -11,8 +11,6 @@ import net.minecraft.world.Blockreader;
 import net.minecraft.world.IBlockReader;
 import net.minecraft.world.IWorld;
 import net.minecraft.world.biome.Biome;
-import net.minecraft.world.biome.Biomes;
-import net.minecraft.world.biome.provider.SingleBiomeProvider;
 import net.minecraft.world.chunk.IChunk;
 import net.minecraft.world.gen.ChunkGenerator;
 import net.minecraft.world.gen.Heightmap;
@@ -20,14 +18,18 @@ import net.minecraft.world.gen.WorldGenRegion;
 import net.minecraft.world.gen.feature.structure.StructureManager;
 import net.minecraft.world.gen.settings.DimensionStructuresSettings;
 
-public class ExampleChunkGenerator extends ChunkGenerator {
-  public static final Codec<ExampleChunkGenerator> CODEC = RegistryLookupCodec.create(Registry.BIOME_REGISTRY).xmap(ExampleChunkGenerator::new, ExampleChunkGenerator::getBiomesRegistry).codec();
+public class SpaceChunkGenerator extends ChunkGenerator {
+  public static final Codec<SpaceChunkGenerator> CODEC = RecordCodecBuilder.create(instance -> instance.group(RegistryLookupCodec.create(Registry.BIOME_REGISTRY).forGetter(SpaceChunkGenerator::getBiomesRegistry), SpaceSystemSettings.SETTINGS_CODEC.fieldOf("settings").forGetter(SpaceChunkGenerator::getSpaceDimensionSettings)).apply(instance, SpaceChunkGenerator::new));
 
-  private final Registry<Biome> biomes;
+  protected final SpaceSystemSettings settings;
 
-  public ExampleChunkGenerator(Registry<Biome> registry) {
-    super(new SingleBiomeProvider(registry.getOrThrow(Biomes.PLAINS)), new DimensionStructuresSettings(false));
-    this.biomes = registry;
+  public SpaceChunkGenerator(MinecraftServer server, SpaceSystemSettings settings) {
+    this(server.registryAccess().registryOrThrow(Registry.BIOME_REGISTRY), settings);
+  }
+
+  public SpaceChunkGenerator(Registry<Biome> registry, SpaceSystemSettings settings) {
+    super(new SpaceBiomeProvider(registry), new DimensionStructuresSettings(false));
+    this.settings = settings;
   }
 
   @Override
@@ -36,12 +38,16 @@ public class ExampleChunkGenerator extends ChunkGenerator {
   }
 
   public Registry<Biome> getBiomesRegistry() {
-    return this.biomes;
+    return ((SpaceBiomeProvider) biomeSource).getBiomesRegistry();
+  }
+
+  public SpaceSystemSettings getSpaceDimensionSettings() {
+    return settings;
   }
 
   @Override
   public ChunkGenerator withSeed(long seed) {
-    return this;
+    return new SpaceChunkGenerator(getBiomesRegistry(), getSpaceDimensionSettings());
   }
 
   @Override

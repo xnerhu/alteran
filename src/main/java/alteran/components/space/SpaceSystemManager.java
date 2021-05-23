@@ -1,23 +1,18 @@
 package alteran.components.space;
 
-import alteran.commands.TeleportationTools;
 import alteran.common.AlteranCommon;
 import alteran.components.dimensions.DimensionBuilder;
 import alteran.components.dimensions.DimensionData;
 import alteran.components.dimensions.DimensionId;
 import alteran.components.dimensions.DimensionStorage;
-import alteran.components.space.worldgen.ExampleChunkGenerator;
-import alteran.components.space.worldgen.SpaceSystemChunkGenerator;
+import alteran.components.space.world.SpaceChunkGenerator;
 import alteran.dimensions.DimensionRegistry;
-import net.minecraft.util.Direction;
 import net.minecraft.util.RegistryKey;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.registry.Registry;
 import net.minecraft.world.Dimension;
 import net.minecraft.world.DimensionType;
 import net.minecraft.world.World;
-import net.minecraft.world.gen.FlatChunkGenerator;
-import net.minecraft.world.gen.FlatGenerationSettings;
 import net.minecraft.world.server.ServerWorld;
 
 public class SpaceSystemManager {
@@ -56,9 +51,9 @@ public class SpaceSystemManager {
     RegistryKey<World> key = RegistryKey.create(Registry.DIMENSION_REGISTRY, id);
     SpaceSystemSettings settings = new SpaceSystemSettings(seed, "xdd");
 
-    DimensionType type = world.getServer().registryAccess().registryOrThrow(Registry.DIMENSION_TYPE_REGISTRY).get(DimensionRegistry.FIXED_DAY_ID);
+    DimensionType type = world.getServer().registryAccess().registryOrThrow(Registry.DIMENSION_TYPE_REGISTRY).get(DimensionRegistry.YELLOW_STAR_SYSTEM);
 
-    ServerWorld result = DimensionBuilder.getOrCreateWorld(world.getServer(), key, (server, registryKey) -> new Dimension(() -> type, new SpaceSystemChunkGenerator(server, settings))); /* new ExampleChunkGenerator(server.registryAccess().registryOrThrow(Registry.BIOME_REGISTRY)))*/
+    ServerWorld result = DimensionBuilder.getOrCreateWorld(world.getServer(), key, (server, registryKey) -> new Dimension(() -> type, new SpaceChunkGenerator(server, settings))); /* new ExampleChunkGenerator(server.registryAccess().registryOrThrow(Registry.BIOME_REGISTRY)))*/
 
     data = new DimensionData(id);
     mgr.register(data);
