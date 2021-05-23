@@ -46,6 +46,8 @@ public class Alteran {
   }
 
   public void onClientSetup(FMLClientSetupEvent e) {
+    RenderSpaceSky.onInit();
+
     DimensionRenderInfo.EFFECTS.put(AlteranSkyEffects.EFFECT_YELLOW_STAR_SYSTEM, new YellowStarSystemRenderInfo());
   }
 
