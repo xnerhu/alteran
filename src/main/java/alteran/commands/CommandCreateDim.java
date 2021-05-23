@@ -1,7 +1,6 @@
 package alteran.commands;
 
-import alteran.common.AlteranCommon;
-import alteran.dimensions.DimensionManager;
+import alteran.components.space.SpaceSystemManager;
 import com.mojang.brigadier.Command;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.LongArgumentType;
@@ -11,7 +10,6 @@ import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import net.minecraft.command.CommandSource;
 import net.minecraft.command.Commands;
-import net.minecraft.util.SharedConstants;
 import net.minecraft.util.text.StringTextComponent;
 import net.minecraft.util.text.TextFormatting;
 
@@ -30,7 +28,7 @@ public class CommandCreateDim implements Command<CommandSource> {
     String name = context.getArgument("name", String.class);
     long seed = context.getSource().getLevel().getSeed(); // context.getArgument("seed", Long.class);
 
-    String error = DimensionManager.get().createDimension(context.getSource().getLevel(), name, seed);
+    String error = SpaceSystemManager.get().createDimension(context.getSource().getLevel(), name, seed);
     if (error != null) {
       context.getSource().sendSuccess(new StringTextComponent(TextFormatting.RED + error), true);
     }
