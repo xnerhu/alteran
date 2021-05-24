@@ -16,6 +16,7 @@ import net.minecraft.client.renderer.Tessellator;
 import net.minecraft.client.renderer.vertex.DefaultVertexFormats;
 import net.minecraft.client.renderer.vertex.VertexFormat;
 import net.minecraft.client.world.DimensionRenderInfo;
+import net.minecraft.util.math.vector.Vector3d;
 import net.minecraft.util.registry.Registry;
 import net.minecraftforge.client.event.RenderWorldLastEvent;
 import net.minecraftforge.common.MinecraftForge;
@@ -76,7 +77,6 @@ public class Alteran {
 
 		MatrixStack ms = event.getMatrixStack();
 
-		ms.pushPose();
 
 		RenderSystem.disableFog();
 		RenderSystem.disableAlphaTest();
@@ -87,12 +87,11 @@ public class Alteran {
 		Minecraft mc = Minecraft.getInstance();
 		ClientPlayerEntity player = mc.player;
 
-		double offsetX = player.xo + (player.getX() - player.xo) * (double) event.getPartialTicks();
-		double offsetY = player.yo + (player.getY() - player.yo) * (double) event.getPartialTicks();
-		double offsetZ = player.zo + (player.getZ() - player.zo) * (double) event.getPartialTicks();
+		ms.pushPose();
 
-		RenderSystem.translated(offsetX, offsetY, offsetZ);
+		Vector3d projectedView = mc.gameRenderer.getMainCamera().getPosition();
 
+		ms.translate(-projectedView.x, -projectedView.y, -projectedView.z);
 
 		float BOX_RENDER_RANGE = 2f;
 		float brightness = 1f;
