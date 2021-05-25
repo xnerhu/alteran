@@ -1,7 +1,10 @@
 package alteran;
 
+import alteran.capabilities.PlayerDataCapability;
 import alteran.commands.AlteranCommands;
 import alteran.common.AlteranCommon;
+import alteran.components.dimensions.DimensionData;
+import alteran.components.dimensions.DimensionId;
 import alteran.components.space.world.SpaceBiomeProvider;
 import alteran.components.space.world.SpaceChunkGenerator;
 import alteran.dimensions.DimensionRegistry;
@@ -20,6 +23,9 @@ import net.minecraft.client.renderer.Tessellator;
 import net.minecraft.client.renderer.vertex.DefaultVertexFormats;
 import net.minecraft.client.renderer.vertex.VertexFormat;
 import net.minecraft.client.world.DimensionRenderInfo;
+import net.minecraft.entity.Entity;
+import net.minecraft.entity.LivingEntity;
+import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.math.vector.Matrix4f;
@@ -27,10 +33,17 @@ import net.minecraft.util.math.vector.Quaternion;
 import net.minecraft.util.math.vector.Vector3d;
 import net.minecraft.util.math.vector.Vector3f;
 import net.minecraft.util.registry.Registry;
+import net.minecraft.world.chunk.listener.IChunkStatusListenerFactory;
+import net.minecraft.world.storage.PlayerData;
 import net.minecraft.world.storage.SaveFormat;
 import net.minecraftforge.client.event.RenderWorldLastEvent;
 import net.minecraftforge.common.MinecraftForge;
+import net.minecraftforge.common.capabilities.CapabilityManager;
+import net.minecraftforge.event.AttachCapabilitiesEvent;
 import net.minecraftforge.event.RegisterCommandsEvent;
+import net.minecraftforge.event.entity.EntityEvent;
+import net.minecraftforge.event.entity.living.LivingEvent;
+import net.minecraftforge.event.world.BlockEvent;
 import net.minecraftforge.eventbus.api.EventPriority;
 import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
@@ -48,97 +61,117 @@ import java.util.function.Function;
 
 @Mod(AlteranCommon.modId)
 public class Alteran {
-	public Alteran() {
-		IEventBus modBus = FMLJavaModLoadingContext.get().getModEventBus();
-		IEventBus forgeBus = MinecraftForge.EVENT_BUS;
+  public static boolean GRAVITY_DISABLED = true;
 
-		modBus.addListener(this::onCommonSetup);
-		modBus.addListener(this::clientSetup);
-		forgeBus.addListener(this::onRenderWorldLast);
-		forgeBus.addListener(this::serverLoad);
+  public Alteran() {
+    IEventBus modBus = FMLJavaModLoadingContext.get().getModEventBus();
+    IEventBus forgeBus = MinecraftForge.EVENT_BUS;
 
-		DeferredRegister<?>[] registers = {AlteranBiomes.BIOMES, AlteranSurfaceBuilders.SURFACE_BUILDERS};
+    modBus.addListener(this::onCommonSetup);
+    modBus.addListener(this::clientSetup);
+    forgeBus.addListener(this::serverLoad);
+    forgeBus.addListener(this::onLivingTick);
+    forgeBus.addListener(this::onLivingUpdate);
+    forgeBus.addGenericListener(Entity.class, this::attachPlayerCap);
 
-		for (DeferredRegister<?> register : registers) {
-			register.register(modBus);
-		}
-	}
+    DeferredRegister<?>[] registers = {AlteranBiomes.BIOMES, AlteranSurfaceBuilders.SURFACE_BUILDERS};
+
+    for (DeferredRegister<?> register : registers) {
+      register.register(modBus);
+    }
+  }
 
 
-	public void serverLoad(RegisterCommandsEvent event) {
-		AlteranCommands.register(event.getDispatcher());
-	}
+  public void serverLoad(RegisterCommandsEvent event) {
+    AlteranCommands.register(event.getDispatcher());
+  }
 
-	public void onCommonSetup(FMLCommonSetupEvent e) {
-		AlteranNetwork.registerMessages("alteran");
+  public void onCommonSetup(FMLCommonSetupEvent e) {
+    AlteranNetwork.registerMessages("alteran");
+    CapabilityManager.INSTANCE.register(PlayerDataCapability.class, new PlayerDataCapability.Storage(), () -> new PlayerDataCapability(null));
 
-		e.enqueueWork(() -> {
-			AlteranBiomes.registerToDictionary();
+    e.enqueueWork(() -> {
+      AlteranBiomes.registerToDictionary();
 
-			Registry.register(Registry.CHUNK_GENERATOR, DimensionRegistry.SPACE_SYSTEM, SpaceChunkGenerator.CODEC);
-			Registry.register(Registry.BIOME_SOURCE, DimensionRegistry.BIOMES_ID, SpaceBiomeProvider.CODEC);
-		});
-	}
+      Registry.register(Registry.CHUNK_GENERATOR, DimensionRegistry.SPACE_SYSTEM, SpaceChunkGenerator.CODEC);
+      Registry.register(Registry.BIOME_SOURCE, DimensionRegistry.BIOMES_ID, SpaceBiomeProvider.CODEC);
 
-	public void clientSetup(FMLClientSetupEvent e) {
-		try {
-			ModelLoader.reloadModels();
+    });
+  }
 
-			Field field = DimensionRenderInfo.class.getField("EFFECTS");
-			field.setAccessible(true);
-			Object2ObjectMap<ResourceLocation, DimensionRenderInfo> effects = (Object2ObjectMap<ResourceLocation, DimensionRenderInfo>) field.get(null);
-			effects.put(AlteranSkyEffects.EFFECT_YELLOW_STAR_SYSTEM, new YellowStarSystemRenderInfo());
-		} catch (IllegalAccessException | NoSuchFieldException | IOException x) {
-			x.printStackTrace();
-		}
+  public void clientSetup(FMLClientSetupEvent e) {
+    try {
+      ModelLoader.reloadModels();
 
-	}
+      Field field = DimensionRenderInfo.class.getField("EFFECTS");
+      field.setAccessible(true);
+      Object2ObjectMap<ResourceLocation, DimensionRenderInfo> effects = (Object2ObjectMap<ResourceLocation, DimensionRenderInfo>) field.get(null);
+      effects.put(AlteranSkyEffects.EFFECT_YELLOW_STAR_SYSTEM, new YellowStarSystemRenderInfo());
+    } catch (IllegalAccessException | NoSuchFieldException | IOException x) {
+      x.printStackTrace();
+    }
+  }
 
-	public void onRenderWorldLast(RenderWorldLastEvent event) {
-		RenderSystem.disableFog();
-		RenderSystem.disableAlphaTest();
-		RenderSystem.disableTexture();
-		RenderSystem.disableBlend();
 
-		Minecraft mc = Minecraft.getInstance();
-		MatrixStack ms = event.getMatrixStack();
-		Tessellator tessellator = Tessellator.getInstance();
-		BufferBuilder bufferbuilder = tessellator.getBuilder();
+  public void onLivingTick(LivingEvent.LivingUpdateEvent e) {
+    LivingEntity entity = e.getEntityLiving();
 
-		ms.pushPose();
-		Vector3d v = mc.gameRenderer.getMainCamera().getPosition();
-		ms.translate(-v.x, -v.y, -v.z);
-		Minecraft.getInstance().textureManager.bind(new ResourceLocation(AlteranCommon.modId, "textures/gatering7.jpg"));
-		OBJModel model = ModelLoader.getModel(ModelLoader.getModelResource("sphere.obj"));
+    if (!GRAVITY_DISABLED && entity instanceof PlayerEntity) {
+      DimensionId dimId = DimensionId.fromResourceLocation(new ResourceLocation(AlteranCommon.modId, "xd"));
 
-		Matrix4f matrix = ms.last().pose();
+      if (!dimId.sameDimension(entity.level)) {
+        return;
+      }
 
-		VertexFormat format = DefaultVertexFormats.POSITION_COLOR;
+      PlayerDataCapability data = entity.getCapability(AlteranCapabilities.PLAYER_DATA).orElse(null);
 
-		bufferbuilder.begin(GL11.GL_QUADS, format);
-		for (int i = 0; i < model.vertices.length / 3; i++) {
-			float x = model.vertices[i * 3];
-			float y = model.vertices[i * 3 + 1];
-			float z = model.vertices[i * 3 + 2];
+      if (entity.isShiftKeyDown()) {
+        data.momentum = new Vector3d(0, 0, 0);
+        return;
+      }
 
-			//System.out.println("XYZ: " + x + " " + y + " " + z);
+      Vector3d momentum = data.momentum;
 
-			float brightness = 1f;
+      if (momentum.x != 0 || momentum.y != 0 || momentum.z != 0) {
+        double x = momentum.x + (1 - Math.abs(entity.xxa)) * -Math.signum(entity.xxa);
+        double z = momentum.z + (1 - Math.abs(entity.zza)) * -Math.signum(entity.zza);
 
-			bufferbuilder.vertex(matrix, x, y, z).color(brightness, brightness, brightness, 1.0F).endVertex();
-			bufferbuilder.vertex(matrix, x, y, z).color(brightness, brightness, brightness, 1.0F).endVertex();
-			bufferbuilder.vertex(matrix, x, y, z).color(brightness, brightness, brightness, 1.0F).endVertex();
+        entity.setDeltaMovement(x, momentum.y, z);
+      }
+    }
+  }
 
-		}
-		tessellator.end();
+  public void onLivingUpdate(LivingEvent.LivingUpdateEvent e) {
+    LivingEntity entity = e.getEntityLiving();
 
-		ms.popPose();
+    if (entity instanceof PlayerEntity) {
+      PlayerEntity player = (PlayerEntity) entity;
 
-		RenderSystem.enableTexture();
-		RenderSystem.enableBlend();
-		RenderSystem.enableAlphaTest();
-		RenderSystem.enableFog();
-	}
+      DimensionId dimId = DimensionId.fromResourceLocation(new ResourceLocation(AlteranCommon.modId, "xd"));
 
+      if (!dimId.sameDimension(entity.level)) {
+        return;
+      }
+
+
+      PlayerDataCapability data = entity.getCapability(AlteranCapabilities.PLAYER_DATA).orElse(null);
+
+      if (!entity.isShiftKeyDown() && !entity.isOnGround() && (data.momentum.x == 0 && data.momentum.y == 0 && data.momentum.z == 0)) {
+        Vector3d forward = entity.getForward();
+        double speed = entity.getSpeed();
+
+        data.momentum = new Vector3d(speed * forward.x, 0.25 * speed * forward.y, speed * forward.z);
+      } else if (entity.isOnGround()) {
+        data.momentum = new Vector3d(0, 0, 0);
+      }
+    }
+  }
+
+  public void attachPlayerCap(AttachCapabilitiesEvent<Entity> e) {
+    Entity obj = e.getObject();
+
+    if (obj instanceof PlayerEntity)
+      e.addCapability(new ResourceLocation(AlteranCommon.modId, "player_data"), new PlayerDataCapability.Provider(new PlayerDataCapability((PlayerEntity) obj)));
+  }
 }
 
