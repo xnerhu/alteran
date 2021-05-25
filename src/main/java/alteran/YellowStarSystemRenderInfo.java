@@ -9,34 +9,34 @@ import net.minecraftforge.client.ICloudRenderHandler;
 import net.minecraftforge.client.ISkyRenderHandler;
 
 public class YellowStarSystemRenderInfo extends DimensionRenderInfo {
-  public YellowStarSystemRenderInfo() {
-    super(-1, true, DimensionRenderInfo.FogType.NORMAL, false, false);
-  }
+	public YellowStarSystemRenderInfo() {
+		super(-1, true, DimensionRenderInfo.FogType.NORMAL, false, false);
+	}
 
-  @Override
-  public Vector3d getBrightnessDependentFogColor(Vector3d fogColor, float partialTicks) {
-    return new Vector3d(0, 0, 0);
-  }
+	@Override
+	public Vector3d getBrightnessDependentFogColor(Vector3d fogColor, float partialTicks) {
+		return new Vector3d(0, 0, 0);
+	}
 
-  @Override
-  public boolean isFoggyAt(int posX, int posY) {
-    return false;
-  }
+	@Override
+	public boolean isFoggyAt(int posX, int posY) {
+		return false;
+	}
 
-  @Override
-  public ISkyRenderHandler getSkyRenderHandler() {
-    return new RenderSpaceSky();
-  }
+	@Override
+	public ISkyRenderHandler getSkyRenderHandler() {
+		return RenderSpaceSky.getInstance();
+	}
 
-  @Override
-  public ICloudRenderHandler getCloudRenderHandler() {
-    return (int ticks, float partialTicks, MatrixStack ms, ClientWorld world, Minecraft mc, double viewEntityX, double viewEntityY, double viewEntityZ) -> {
+	@Override
+	public ICloudRenderHandler getCloudRenderHandler() {
+		return (int ticks, float partialTicks, MatrixStack ms, ClientWorld world, Minecraft mc, double viewEntityX, double viewEntityY, double viewEntityZ) -> {
 
-    };
-  }
+		};
+	}
 
-  @Override
-  public float[] getSunriseColor(float p_230492_1_, float p_230492_2_) {
-    return null;
-  }
+	@Override
+	public float[] getSunriseColor(float p_230492_1_, float p_230492_2_) {
+		return null;
+	}
 }

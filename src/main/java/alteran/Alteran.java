@@ -5,10 +5,14 @@ import alteran.common.AlteranCommon;
 import alteran.components.space.world.SpaceBiomeProvider;
 import alteran.components.space.world.SpaceChunkGenerator;
 import alteran.dimensions.DimensionRegistry;
+import alteran.loader.model.ModelLoader;
+import alteran.loader.model.OBJModel;
 import alteran.network.AlteranNetwork;
+import alteran.utils.ReflectionUtils;
 import com.mojang.blaze3d.matrix.MatrixStack;
 import com.mojang.blaze3d.platform.GlStateManager;
 import com.mojang.blaze3d.systems.RenderSystem;
+import it.unimi.dsi.fastutil.objects.Object2ObjectMap;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.entity.player.ClientPlayerEntity;
 import net.minecraft.client.renderer.BufferBuilder;
@@ -16,8 +20,14 @@ import net.minecraft.client.renderer.Tessellator;
 import net.minecraft.client.renderer.vertex.DefaultVertexFormats;
 import net.minecraft.client.renderer.vertex.VertexFormat;
 import net.minecraft.client.world.DimensionRenderInfo;
+import net.minecraft.server.MinecraftServer;
+import net.minecraft.util.ResourceLocation;
+import net.minecraft.util.math.vector.Matrix4f;
+import net.minecraft.util.math.vector.Quaternion;
 import net.minecraft.util.math.vector.Vector3d;
+import net.minecraft.util.math.vector.Vector3f;
 import net.minecraft.util.registry.Registry;
+import net.minecraft.world.storage.SaveFormat;
 import net.minecraftforge.client.event.RenderWorldLastEvent;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.RegisterCommandsEvent;
@@ -32,6 +42,9 @@ import net.minecraftforge.registries.DeferredRegister;
 import org.lwjgl.opengl.GL11;
 
 import javax.annotation.Nullable;
+import java.io.IOException;
+import java.lang.reflect.Field;
+import java.util.function.Function;
 
 @Mod(AlteranCommon.modId)
 public class Alteran {
@@ -68,130 +81,55 @@ public class Alteran {
 	}
 
 	public void clientSetup(FMLClientSetupEvent e) {
-		DimensionRenderInfo.EFFECTS.put(AlteranSkyEffects.EFFECT_YELLOW_STAR_SYSTEM, new YellowStarSystemRenderInfo());
+		try {
+			ModelLoader.reloadModels();
+
+			Field field = DimensionRenderInfo.class.getField("EFFECTS");
+			field.setAccessible(true);
+			Object2ObjectMap<ResourceLocation, DimensionRenderInfo> effects = (Object2ObjectMap<ResourceLocation, DimensionRenderInfo>) field.get(null);
+			effects.put(AlteranSkyEffects.EFFECT_YELLOW_STAR_SYSTEM, new YellowStarSystemRenderInfo());
+		} catch (IllegalAccessException | NoSuchFieldException | IOException x) {
+			x.printStackTrace();
+		}
+
 	}
 
 	public void onRenderWorldLast(RenderWorldLastEvent event) {
-		Tessellator tessellator = Tessellator.getInstance();
-		BufferBuilder bufferbuilder = tessellator.getBuilder();
-
-		MatrixStack ms = event.getMatrixStack();
-
-
 		RenderSystem.disableFog();
 		RenderSystem.disableAlphaTest();
 		RenderSystem.disableTexture();
 		RenderSystem.disableBlend();
-		//		RenderSystem.blendFuncSeparate(GlStateManager.SourceFactor.SRC_ALPHA, GlStateManager.DestFactor.ONE_MINUS_SRC_ALPHA, GlStateManager.SourceFactor.ONE, GlStateManager.DestFactor.ZERO);
 
 		Minecraft mc = Minecraft.getInstance();
-		ClientPlayerEntity player = mc.player;
+		MatrixStack ms = event.getMatrixStack();
+		Tessellator tessellator = Tessellator.getInstance();
+		BufferBuilder bufferbuilder = tessellator.getBuilder();
 
 		ms.pushPose();
+		Vector3d v = mc.gameRenderer.getMainCamera().getPosition();
+		ms.translate(-v.x, -v.y, -v.z);
+		Minecraft.getInstance().textureManager.bind(new ResourceLocation(AlteranCommon.modId, "textures/gatering7.jpg"));
+		OBJModel model = ModelLoader.getModel(ModelLoader.getModelResource("sphere.obj"));
 
-		Vector3d projectedView = mc.gameRenderer.getMainCamera().getPosition();
-
-		ms.translate(-projectedView.x, -projectedView.y, -projectedView.z);
-
-		float BOX_RENDER_RANGE = 2f;
-		float brightness = 1f;
+		Matrix4f matrix = ms.last().pose();
 
 		VertexFormat format = DefaultVertexFormats.POSITION_COLOR;
 
-		// bottom
-		//Minecraft.getInstance().getTextureManager().bindTexture(textureSkyBox[0]);
 		bufferbuilder.begin(GL11.GL_QUADS, format);
-		//		bufferbuilder.pos(-BOX_RENDER_RANGE, -BOX_RENDER_RANGE, -BOX_RENDER_RANGE).tex( 0.0F,  0.0F).color(brightness, brightness, brightness, 1.0F).endVertex();
-		//		bufferbuilder.pos(-BOX_RENDER_RANGE, -BOX_RENDER_RANGE,  BOX_RENDER_RANGE).tex( 0.0F, maxUV).color(brightness, brightness, brightness, 1.0F).endVertex();
-		//		bufferbuilder.pos( BOX_RENDER_RANGE, -BOX_RENDER_RANGE,  BOX_RENDER_RANGE).tex(maxUV, maxUV).color(brightness, brightness, brightness, 1.0F).endVertex();
-		//		bufferbuilder.pos( BOX_RENDER_RANGE, -BOX_RENDER_RANGE, -BOX_RENDER_RANGE).tex(maxUV,  0.0F).color(brightness, brightness, brightness, 1.0F).endVertex();
+		for (int i = 0; i < model.vertices.length / 3; i++) {
+			float x = model.vertices[i * 3];
+			float y = model.vertices[i * 3 + 1];
+			float z = model.vertices[i * 3 + 2];
 
-		bufferbuilder.vertex(-BOX_RENDER_RANGE, -BOX_RENDER_RANGE, -BOX_RENDER_RANGE).color(brightness, brightness, brightness, 1.0F).endVertex();
-		bufferbuilder.vertex(-BOX_RENDER_RANGE, -BOX_RENDER_RANGE, BOX_RENDER_RANGE).color(brightness, brightness, brightness, 1.0F).endVertex();
-		bufferbuilder.vertex(BOX_RENDER_RANGE, -BOX_RENDER_RANGE, BOX_RENDER_RANGE).color(brightness, brightness, brightness, 1.0F).endVertex();
-		bufferbuilder.vertex(BOX_RENDER_RANGE, -BOX_RENDER_RANGE, -BOX_RENDER_RANGE).color(brightness, brightness, brightness, 1.0F).endVertex();
-		tessellator.end();
+			//System.out.println("XYZ: " + x + " " + y + " " + z);
 
-		// front
-		//		if (textureSkyBox.length > 1) {
-		//			Minecraft.getInstance().getTextureManager().bindTexture(textureSkyBox[1]);
-		//		}
-		bufferbuilder.begin(GL11.GL_QUADS, format);
-		//		bufferbuilder.pos(-BOX_RENDER_RANGE,  BOX_RENDER_RANGE, -BOX_RENDER_RANGE).tex( 0.0F,  0.0F).color(brightness, brightness, brightness, 1.0F).endVertex();
-		//		bufferbuilder.pos(-BOX_RENDER_RANGE, -BOX_RENDER_RANGE, -BOX_RENDER_RANGE).tex( 0.0F, maxUV).color(brightness, brightness, brightness, 1.0F).endVertex();
-		//		bufferbuilder.pos( BOX_RENDER_RANGE, -BOX_RENDER_RANGE, -BOX_RENDER_RANGE).tex(maxUV, maxUV).color(brightness, brightness, brightness, 1.0F).endVertex();
-		//		bufferbuilder.pos( BOX_RENDER_RANGE,  BOX_RENDER_RANGE, -BOX_RENDER_RANGE).tex(maxUV,  0.0F).color(brightness, brightness, brightness, 1.0F).endVertex();
+			float brightness = 1f;
 
-		bufferbuilder.vertex(-BOX_RENDER_RANGE, BOX_RENDER_RANGE, -BOX_RENDER_RANGE).color(brightness, brightness, brightness, 1.0F).endVertex();
-		bufferbuilder.vertex(-BOX_RENDER_RANGE, -BOX_RENDER_RANGE, -BOX_RENDER_RANGE).color(brightness, brightness, brightness, 1.0F).endVertex();
-		bufferbuilder.vertex(BOX_RENDER_RANGE, -BOX_RENDER_RANGE, -BOX_RENDER_RANGE).color(brightness, brightness, brightness, 1.0F).endVertex();
-		bufferbuilder.vertex(BOX_RENDER_RANGE, BOX_RENDER_RANGE, -BOX_RENDER_RANGE).color(brightness, brightness, brightness, 1.0F).endVertex();
-		tessellator.end();
+			bufferbuilder.vertex(matrix, x, y, z).color(brightness, brightness, brightness, 1.0F).endVertex();
+			bufferbuilder.vertex(matrix, x, y, z).color(brightness, brightness, brightness, 1.0F).endVertex();
+			bufferbuilder.vertex(matrix, x, y, z).color(brightness, brightness, brightness, 1.0F).endVertex();
 
-		// back
-		//		if (textureSkyBox.length > 1) {
-		//			Minecraft.getInstance().getTextureManager().bindTexture(textureSkyBox[2]);
-		//		}
-		bufferbuilder.begin(GL11.GL_QUADS, format);
-		//		bufferbuilder.vertex( BOX_RENDER_RANGE,  BOX_RENDER_RANGE,  BOX_RENDER_RANGE).tex( 0.0F,  0.0F).color(brightness, brightness, brightness, 1.0F).endVertex();
-		//		bufferbuilder.vertex( BOX_RENDER_RANGE, -BOX_RENDER_RANGE,  BOX_RENDER_RANGE).tex( 0.0F, maxUV).color(brightness, brightness, brightness, 1.0F).endVertex();
-		//		bufferbuilder.vertex(-BOX_RENDER_RANGE, -BOX_RENDER_RANGE,  BOX_RENDER_RANGE).tex(maxUV, maxUV).color(brightness, brightness, brightness, 1.0F).endVertex();
-		//		bufferbuilder.vertex(-BOX_RENDER_RANGE,  BOX_RENDER_RANGE,  BOX_RENDER_RANGE).tex(maxUV,  0.0F).color(brightness, brightness, brightness, 1.0F).endVertex();
-
-		bufferbuilder.vertex(BOX_RENDER_RANGE, BOX_RENDER_RANGE, BOX_RENDER_RANGE).color(brightness, brightness, brightness, 1.0F).endVertex();
-		bufferbuilder.vertex(BOX_RENDER_RANGE, -BOX_RENDER_RANGE, BOX_RENDER_RANGE).color(brightness, brightness, brightness, 1.0F).endVertex();
-		bufferbuilder.vertex(-BOX_RENDER_RANGE, -BOX_RENDER_RANGE, BOX_RENDER_RANGE).color(brightness, brightness, brightness, 1.0F).endVertex();
-		bufferbuilder.vertex(-BOX_RENDER_RANGE, BOX_RENDER_RANGE, BOX_RENDER_RANGE).color(brightness, brightness, brightness, 1.0F).endVertex();
-
-		tessellator.end();
-
-		// top
-		//		if (textureSkyBox.length > 1) {
-		//			Minecraft.getInstance().getTextureManager().bindTexture(textureSkyBox[3]);
-		//		}
-		bufferbuilder.begin(GL11.GL_QUADS, format);
-		//		bufferbuilder.vertex(-BOX_RENDER_RANGE,  BOX_RENDER_RANGE, -BOX_RENDER_RANGE).tex( 0.0F, maxUV).color(brightness, brightness, brightness, 1.0F).endVertex();
-		//		bufferbuilder.vertex( BOX_RENDER_RANGE,  BOX_RENDER_RANGE, -BOX_RENDER_RANGE).tex(maxUV, maxUV).color(brightness, brightness, brightness, 1.0F).endVertex();
-		//		bufferbuilder.vertex( BOX_RENDER_RANGE,  BOX_RENDER_RANGE,  BOX_RENDER_RANGE).tex(maxUV,  0.0F).color(brightness, brightness, brightness, 1.0F).endVertex();
-		//		bufferbuilder.vertex(-BOX_RENDER_RANGE,  BOX_RENDER_RANGE,  BOX_RENDER_RANGE).tex( 0.0F,  0.0F).color(brightness, brightness, brightness, 1.0F).endVertex();
-
-		bufferbuilder.vertex(-BOX_RENDER_RANGE, BOX_RENDER_RANGE, -BOX_RENDER_RANGE).color(brightness, brightness, brightness, 1.0F).endVertex();
-		bufferbuilder.vertex(BOX_RENDER_RANGE, BOX_RENDER_RANGE, -BOX_RENDER_RANGE).color(brightness, brightness, brightness, 1.0F).endVertex();
-		bufferbuilder.vertex(BOX_RENDER_RANGE, BOX_RENDER_RANGE, BOX_RENDER_RANGE).color(brightness, brightness, brightness, 1.0F).endVertex();
-		bufferbuilder.vertex(-BOX_RENDER_RANGE, BOX_RENDER_RANGE, BOX_RENDER_RANGE).color(brightness, brightness, brightness, 1.0F).endVertex();
-
-		tessellator.end();
-
-		// right
-		//		if (textureSkyBox.length > 1) {
-		//			Minecraft.getInstance().getTextureManager().bindTexture(textureSkyBox[4]);
-		//		}
-		bufferbuilder.begin(GL11.GL_QUADS, format);
-		//		bufferbuilder.vertex( BOX_RENDER_RANGE,  BOX_RENDER_RANGE, -BOX_RENDER_RANGE).tex( 0.0F,  0.0F).color(brightness, brightness, brightness, 1.0F).endVertex();
-		//		bufferbuilder.vertex( BOX_RENDER_RANGE, -BOX_RENDER_RANGE, -BOX_RENDER_RANGE).tex( 0.0F, maxUV).color(brightness, brightness, brightness, 1.0F).endVertex();
-		//		bufferbuilder.vertex( BOX_RENDER_RANGE, -BOX_RENDER_RANGE,  BOX_RENDER_RANGE).tex(maxUV, maxUV).color(brightness, brightness, brightness, 1.0F).endVertex();
-		//		bufferbuilder.vertex( BOX_RENDER_RANGE,  BOX_RENDER_RANGE,  BOX_RENDER_RANGE).tex(maxUV,  0.0F).color(brightness, brightness, brightness, 1.0F).endVertex();
-
-		bufferbuilder.vertex(BOX_RENDER_RANGE, BOX_RENDER_RANGE, -BOX_RENDER_RANGE).color(brightness, brightness, brightness, 1.0F).endVertex();
-		bufferbuilder.vertex(BOX_RENDER_RANGE, -BOX_RENDER_RANGE, -BOX_RENDER_RANGE).color(brightness, brightness, brightness, 1.0F).endVertex();
-		bufferbuilder.vertex(BOX_RENDER_RANGE, -BOX_RENDER_RANGE, BOX_RENDER_RANGE).color(brightness, brightness, brightness, 1.0F).endVertex();
-		bufferbuilder.vertex(BOX_RENDER_RANGE, BOX_RENDER_RANGE, BOX_RENDER_RANGE).color(brightness, brightness, brightness, 1.0F).endVertex();
-		tessellator.end();
-
-		// left
-		//		if (textureSkyBox.length > 1) {
-		//			Minecraft.getInstance().getTextureManager().bindTexture(textureSkyBox[5]);
-		//		}
-		bufferbuilder.begin(GL11.GL_QUADS, format);
-		//		bufferbuilder.vertex(-BOX_RENDER_RANGE,  BOX_RENDER_RANGE,  BOX_RENDER_RANGE).tex( 0.0F,  0.0F).color(brightness, brightness, brightness, 1.0F).endVertex();
-		//		bufferbuilder.vertex(-BOX_RENDER_RANGE, -BOX_RENDER_RANGE,  BOX_RENDER_RANGE).tex( 0.0F, maxUV).color(brightness, brightness, brightness, 1.0F).endVertex();
-		//		bufferbuilder.vertex(-BOX_RENDER_RANGE, -BOX_RENDER_RANGE, -BOX_RENDER_RANGE).tex(maxUV, maxUV).color(brightness, brightness, brightness, 1.0F).endVertex();
-		//		bufferbuilder.vertex(-BOX_RENDER_RANGE,  BOX_RENDER_RANGE, -BOX_RENDER_RANGE).tex(maxUV,  0.0F).color(brightness, brightness, brightness, 1.0F).endVertex();
-
-		bufferbuilder.vertex(-BOX_RENDER_RANGE, BOX_RENDER_RANGE, BOX_RENDER_RANGE).color(brightness, brightness, brightness, 1.0F).endVertex();
-		bufferbuilder.vertex(-BOX_RENDER_RANGE, -BOX_RENDER_RANGE, BOX_RENDER_RANGE).color(brightness, brightness, brightness, 1.0F).endVertex();
-		bufferbuilder.vertex(-BOX_RENDER_RANGE, -BOX_RENDER_RANGE, -BOX_RENDER_RANGE).color(brightness, brightness, brightness, 1.0F).endVertex();
-		bufferbuilder.vertex(-BOX_RENDER_RANGE, BOX_RENDER_RANGE, -BOX_RENDER_RANGE).color(brightness, brightness, brightness, 1.0F).endVertex();
+		}
 		tessellator.end();
 
 		ms.popPose();

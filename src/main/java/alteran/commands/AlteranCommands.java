@@ -7,9 +7,9 @@ import net.minecraft.command.CommandSource;
 import net.minecraft.command.Commands;
 
 public class AlteranCommands {
-  public static void register(CommandDispatcher<CommandSource> dispatcher) {
-    LiteralCommandNode<CommandSource> commands = dispatcher.register(Commands.literal(AlteranCommon.modId).then(CommandCreateDim.register(dispatcher)).then(CommandTpDim.register(dispatcher)));
+	public static void register(CommandDispatcher<CommandSource> dispatcher) {
+		LiteralCommandNode<CommandSource> commands = dispatcher.register(Commands.literal(AlteranCommon.modId).then(CommandCreateDim.register(dispatcher)).then(CommandTpDim.register(dispatcher)).then(CommandReloadSpaceSkyRenderer.register(dispatcher)));
 
-    dispatcher.register(Commands.literal("dim").redirect(commands));
-  }
+		dispatcher.register(Commands.literal("dim").redirect(commands));
+	}
 }
