@@ -36,8 +36,8 @@ public class OBJModel {
 	private boolean hasTex;
 
 	public float[] vertices;
-	private float[] textureCoords;
-	private float[] normals;
+	public float[] textureCoords;
+	public float[] normals;
 	public int[] indices;
 
 

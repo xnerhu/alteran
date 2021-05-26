@@ -95,49 +95,7 @@ public class Alteran {
 	}
 
 	public void onRenderWorldLast(RenderWorldLastEvent event) {
-		RenderSystem.disableFog();
-		RenderSystem.disableAlphaTest();
-		RenderSystem.disableTexture();
-		RenderSystem.disableBlend();
 
-		Minecraft mc = Minecraft.getInstance();
-		MatrixStack ms = event.getMatrixStack();
-		Tessellator tessellator = Tessellator.getInstance();
-		BufferBuilder bufferbuilder = tessellator.getBuilder();
-
-		ms.pushPose();
-		Vector3d v = mc.gameRenderer.getMainCamera().getPosition();
-		ms.translate(-v.x, -v.y, -v.z);
-		Minecraft.getInstance().textureManager.bind(new ResourceLocation(AlteranCommon.modId, "textures/gatering7.jpg"));
-		OBJModel model = ModelLoader.getModel(ModelLoader.getModelResource("sphere.obj"));
-
-		Matrix4f matrix = ms.last().pose();
-
-		VertexFormat format = DefaultVertexFormats.POSITION_COLOR;
-
-		bufferbuilder.begin(GL11.GL_QUADS, format);
-		for (int i = 0; i < model.vertices.length / 3; i++) {
-			float x = model.vertices[i * 3];
-			float y = model.vertices[i * 3 + 1];
-			float z = model.vertices[i * 3 + 2];
-
-			//System.out.println("XYZ: " + x + " " + y + " " + z);
-
-			float brightness = 1f;
-
-			bufferbuilder.vertex(matrix, x, y, z).color(brightness, brightness, brightness, 1.0F).endVertex();
-			bufferbuilder.vertex(matrix, x, y, z).color(brightness, brightness, brightness, 1.0F).endVertex();
-			bufferbuilder.vertex(matrix, x, y, z).color(brightness, brightness, brightness, 1.0F).endVertex();
-
-		}
-		tessellator.end();
-
-		ms.popPose();
-
-		RenderSystem.enableTexture();
-		RenderSystem.enableBlend();
-		RenderSystem.enableAlphaTest();
-		RenderSystem.enableFog();
 	}
 
 }

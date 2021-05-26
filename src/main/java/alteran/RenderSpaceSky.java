@@ -1,7 +1,6 @@
 package alteran;
 
 
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Random;
 
@@ -47,6 +46,8 @@ public class RenderSpaceSky implements ISkyRenderHandler {
 	private static VertexBuffer nebulas2;
 	private VertexBuffer starVertexBuffer;
 
+	private final ArrayList<AVector3f> lightSources = new ArrayList<>();
+
 	private boolean shouldReload = false;
 
 	public RenderSpaceSky() {
@@ -58,6 +59,11 @@ public class RenderSpaceSky implements ISkyRenderHandler {
 	}
 
 	public void init() {
+		lightSources.clear();
+
+		addLightSource(new AVector3f(0, 0, 1f));
+		//addLightSource(new AVector3f(0, 100f, 100f));
+
 		generateStarData(15000);
 		BufferBuilder buffer = Tessellator.getInstance().getBuilder();
 
@@ -143,6 +149,10 @@ public class RenderSpaceSky implements ISkyRenderHandler {
 		this.starVertexBuffer.upload(bufferBuilder);
 	}
 
+	private void addLightSource(AVector3f source) {
+		lightSources.add(source);
+	}
+
 	@Override
 	public void render(int ticks, float partialTicks, MatrixStack ms, ClientWorld world, Minecraft mc) {
 		if (shouldReload) {
@@ -185,157 +195,159 @@ public class RenderSpaceSky implements ISkyRenderHandler {
 		RenderSystem.enableAlphaTest();
 
 		// TODO(sentialx): sort order by distance
-		renderPlanet(ms, 0, 0, 1000, 800);
-		renderPlanet(ms, 0, 0, 0, 1000);
+
+		renderStar(ms, "textures/celestial/sun2.png", new AVector3f(0, 0, 100), 100);
+		renderPlanet(ms, 0, 0, 0, 5, false, true, "textures/celestial/earth2.jpg");
 	}
 
-	private ArrayList<Vector3f> generateSphere(
-		float radius,
-		int widthSegments, int heightSegments,
-		double phiStart, double phiLength,
-		double thetaStart, double thetaLength) {
+	private float calcPointLight(AVector3f lightSource, AVector3f normal, AVector3f fragPos) {
+		AVector3f lightDir = lightSource.substract(fragPos).normalize();
 
-		ArrayList<Vector3f> positions = new ArrayList<>();
+		// diffuse shading
+		float diff = Math.max(normal.dot(lightDir), 0.0f);
 
-		for (int y = 0; y <= heightSegments; y++) {
-			float v = y / (float) heightSegments;
+		// attenuation
+		float constant = 1f;
+		float linear = 0.09f;
+		float quadratic = 0.032f;
+		float distance = lightSource.substract(fragPos).length();
+		float attenuation = 1.0f / (constant + linear * distance + quadratic * (distance * distance));
 
-			for (int x = 0; x <= widthSegments; x++) {
-				float u = x / (float) widthSegments;
-				float px = (float) (-radius * Math.cos(phiStart + u * phiLength) * Math.sin(thetaStart + v * thetaLength));
-				float py = (float) (radius * Math.cos(thetaStart + v * thetaLength));
-				float pz = (float) (radius * Math.sin(phiStart + u * phiLength) * Math.sin(thetaStart + v * thetaLength));
+		// combine results
+		float ambientLight = 0.05f;
+		float diffuseLight = 0.6f;
 
-				positions.add(new Vector3f(px, py, pz));
-			}
-		}
+		float ambient = ambientLight;
+		float diffuse = diffuseLight * diff;
 
-		return positions;
+		ambient *= attenuation;
+		diffuse *= attenuation;
+
+		return ambient + diffuse;
 	}
 
+	public void renderStar(MatrixStack ms, String texture, AVector3f pos, float scale) {
+		RenderSystem.disableFog();
+		RenderSystem.disableAlphaTest();
+		RenderSystem.enableBlend();
+		RenderSystem.enableTexture();
+		RenderSystem.blendFuncSeparate(GlStateManager.SourceFactor.SRC_ALPHA, GlStateManager.DestFactor.ONE_MINUS_SRC_ALPHA, GlStateManager.SourceFactor.ONE, GlStateManager.DestFactor.ZERO);
 
-	private void renderPlanet(MatrixStack ms, float x, float y, float z, float scale) {
+		Tessellator tessellator = Tessellator.getInstance();
+		BufferBuilder bufferbuilder = tessellator.getBuilder();
+		Minecraft mc = Minecraft.getInstance();
+
+		ms.pushPose();
+
+		Vector3d v = mc.gameRenderer.getMainCamera().getPosition();
+
+		ms.translate((pos.x - v.x) / scale, (pos.y - v.y) / scale, (pos.z - v.z) / scale);
+
+		float size = 1f;
+
+		Matrix4f matrix = ms.last().pose();
+
+		float b = 1f;
+
+		VertexFormat format = DefaultVertexFormats.POSITION_TEX_COLOR;
+		Minecraft.getInstance().textureManager.bind(new ResourceLocation(AlteranCommon.modId, texture));
+		bufferbuilder.begin(GL11.GL_QUADS, format);
+		bufferbuilder.vertex(matrix, -size, size, 0).uv(0f, 0f).color(b, b, b, b).endVertex();
+		bufferbuilder.vertex(matrix, size, size, 0).uv(1f, 0f).color(b, b, b, b).endVertex();
+		bufferbuilder.vertex(matrix, size, -size, 0).uv(1f, 1f).color(b, b, b, b).endVertex();
+		bufferbuilder.vertex(matrix, -size, -size, 0).uv(0f, 1f).color(b, b, b, b).endVertex();
+		tessellator.end();
+
+		ms.popPose();
+
+		RenderSystem.enableTexture();
+		RenderSystem.enableBlend();
+		RenderSystem.enableAlphaTest();
+		RenderSystem.enableFog();
+	}
+
+	private void renderPlanet(MatrixStack ms, float x, float y, float z, float scale, boolean isEmittingLight, boolean hasTexture, String texture) {
 		Tessellator tessellator = Tessellator.getInstance();
 		BufferBuilder bufferbuilder = tessellator.getBuilder();
 		Minecraft mc = Minecraft.getInstance();
 
 		RenderSystem.disableFog();
 		RenderSystem.disableAlphaTest();
-		RenderSystem.disableTexture();
+		RenderSystem.enableTexture();
 		RenderSystem.disableBlend();
-		//		RenderSystem.blendFuncSeparate(GlStateManager.SourceFactor.SRC_ALPHA, GlStateManager.DestFactor.ONE_MINUS_SRC_ALPHA, GlStateManager.SourceFactor.ONE, GlStateManager.DestFactor.ZERO);Minecraft mc = Minecraft.getInstance();
+		RenderSystem.blendFuncSeparate(GlStateManager.SourceFactor.SRC_ALPHA, GlStateManager.DestFactor.ONE_MINUS_SRC_ALPHA, GlStateManager.SourceFactor.ONE, GlStateManager.DestFactor.ZERO);
+
 
 		ClientPlayerEntity player = mc.player;
 
 		ms.pushPose();
 
-		float BOX_RENDER_RANGE = 0.5f;
-		float brightness = 1f;
-
-		ms.translate((x - player.getX()) / scale, (y - player.getY()) / scale, (z - player.getZ()) / scale);
-
-		VertexFormat format = DefaultVertexFormats.POSITION_COLOR;
 		Matrix4f matrix = ms.last().pose();
 
 		Vector3d v = mc.gameRenderer.getMainCamera().getPosition();
 
 		ms.translate((x - v.x) / scale, (y - v.y) / scale, (z - v.z) / scale);
 
+		RenderSystem.disableBlend();
+
+		Minecraft.getInstance().textureManager.bind(new ResourceLocation(AlteranCommon.modId, texture));
 		OBJModel model = ModelLoader.getModel(ModelLoader.getModelResource("sphere.obj"));
 
-		RenderSystem.shadeModel(7425);
+		VertexFormat format = hasTexture ? DefaultVertexFormats.POSITION_TEX_COLOR : DefaultVertexFormats.POSITION_COLOR;
+
+		if (!hasTexture) {
+			RenderSystem.disableTexture();
+		}
 
 		for (int i = 0; i < model.vertices.length / 9; i++) {
 			float x1 = model.vertices[i * 9];
 			float y1 = model.vertices[i * 9 + 1];
 			float z1 = model.vertices[i * 9 + 2];
 
+			AVector3f v1 = new AVector3f(x1, y1, z1);
+
 			float x2 = model.vertices[i * 9 + 3];
 			float y2 = model.vertices[i * 9 + 4];
 			float z2 = model.vertices[i * 9 + 5];
+
+			AVector3f v2 = new AVector3f(x2, y2, z2);
 
 			float x3 = model.vertices[i * 9 + 6];
 			float y3 = model.vertices[i * 9 + 7];
 			float z3 = model.vertices[i * 9 + 8];
 
-			bufferbuilder.begin(GL11.GL_TRIANGLES, format);
-			bufferbuilder.vertex(matrix, x1, y1, z1).color(brightness, brightness, brightness, 1.0F).endVertex();
-			bufferbuilder.vertex(matrix, x2, y2, z2).color(brightness, brightness, brightness, 1.0F).endVertex();
-			bufferbuilder.vertex(matrix, x3, y3, z3).color(brightness, brightness, brightness, 1.0F).endVertex();
+			AVector3f v3 = new AVector3f(x3, y3, z3);
+
+			float texU1 = model.textureCoords[i * 6];
+			float texV1 = model.textureCoords[i * 6 + 1];
+
+			float texU2 = model.textureCoords[i * 6 + 2];
+			float texV2 = model.textureCoords[i * 6 + 3];
+
+			float texU3 = model.textureCoords[i * 6 + 4];
+			float texV3 = model.textureCoords[i * 6 + 5];
+
+			float brightness;
+
+			if (isEmittingLight) {
+				brightness = 1;
+			} else {
+				AVector3f normal = v2.substract(v1).cross(v3.substract(v1)).normalize();
+
+				//				for (AVector3f lightSource : lightSources) {
+				//					brightness += calcPointLight(lightSource, normal, v1);
+				//				}
+
+				brightness = Math.min(Math.max(normal.dot(lightSources.get(0)), 0), 1f);
+			}
+
+			bufferbuilder.begin(GL11.GL_POLYGON, format);
+			bufferbuilder.vertex(matrix, x1, y1, z1).uv(texU1, texV1).color(brightness, brightness, brightness, 1f).endVertex();
+			bufferbuilder.vertex(matrix, x2, y2, z2).uv(texU2, texV2).color(brightness, brightness, brightness, 1f).endVertex();
+			bufferbuilder.vertex(matrix, x3, y3, z3).uv(texU3, texV3).color(brightness, brightness, brightness, 1f).endVertex();
 			tessellator.end();
 		}
 
-
-		//		Minecraft.getInstance().textureManager.bind(new ResourceLocation(AlteranCommon.modId, "textures/gatering7.jpg"));
-		//		ModelLoader.getModel(ModelLoader.getModelResource("gate.obj")).render();
-
-		//		for (int i = 0; i < vertices.size(); i++) {
-		//			brightness = 1f;
-		//			bufferbuilder.begin(GL11.GL_TRIANGLES, format);
-		//			bufferbuilder.vertex(matrix, vertices.get(i).x(), vertices.get(i).y(), vertices.get(i).z()).color(brightness, brightness, brightness, 1.0F).endVertex();
-		//			if (i + 1 < vertices.size()) {
-		//				bufferbuilder.vertex(matrix, vertices.get(i + 1).x(), vertices.get(i + 1).y(), vertices.get(i + 1).z()).color(brightness, brightness, brightness, 1.0F).endVertex();
-		//			}
-		//			if (i + 2 < vertices.size()) {
-		//				bufferbuilder.vertex(matrix, vertices.get(i + 2).x(), vertices.get(i + 2).y(), vertices.get(i + 2).z()).color(brightness, brightness, brightness, 1.0F).endVertex();
-		//			}
-		//			tessellator.end();
-		//		}
-
-
-		//		// front
-		//		brightness = 1f;
-		//		bufferbuilder.begin(GL11.GL_QUADS, format);
-		//		bufferbuilder.vertex(matrix, -BOX_RENDER_RANGE, -BOX_RENDER_RANGE, BOX_RENDER_RANGE).color(brightness, brightness, brightness, 1.0F).endVertex();
-		//		bufferbuilder.vertex(matrix, BOX_RENDER_RANGE, -BOX_RENDER_RANGE, BOX_RENDER_RANGE).color(brightness, brightness, brightness, 1.0F).endVertex();
-		//		bufferbuilder.vertex(matrix, BOX_RENDER_RANGE, BOX_RENDER_RANGE, BOX_RENDER_RANGE).color(brightness, brightness, brightness, 1.0F).endVertex();
-		//		bufferbuilder.vertex(matrix, -BOX_RENDER_RANGE, BOX_RENDER_RANGE, BOX_RENDER_RANGE).color(brightness, brightness, brightness, 1.0F).endVertex();
-		//		tessellator.end();
-		//
-		//		// right
-		//		brightness = 0.9f;
-		//		bufferbuilder.begin(GL11.GL_QUADS, format);
-		//		bufferbuilder.vertex(matrix, BOX_RENDER_RANGE, BOX_RENDER_RANGE, BOX_RENDER_RANGE).color(brightness, brightness, brightness, 1.0F).endVertex();
-		//		bufferbuilder.vertex(matrix, BOX_RENDER_RANGE, -BOX_RENDER_RANGE, BOX_RENDER_RANGE).color(brightness, brightness, brightness, 1.0F).endVertex();
-		//		bufferbuilder.vertex(matrix, BOX_RENDER_RANGE, -BOX_RENDER_RANGE, -BOX_RENDER_RANGE).color(brightness, brightness, brightness, 1.0F).endVertex();
-		//		bufferbuilder.vertex(matrix, BOX_RENDER_RANGE, BOX_RENDER_RANGE, -BOX_RENDER_RANGE).color(brightness, brightness, brightness, 1.0F).endVertex();
-		//		tessellator.end();
-		//
-		//		// left
-		//		brightness = 0.6f;
-		//		bufferbuilder.begin(GL11.GL_QUADS, format);
-		//		bufferbuilder.vertex(matrix, -BOX_RENDER_RANGE, BOX_RENDER_RANGE, -BOX_RENDER_RANGE).color(brightness, brightness, brightness, 1.0F).endVertex();
-		//		bufferbuilder.vertex(matrix, -BOX_RENDER_RANGE, -BOX_RENDER_RANGE, -BOX_RENDER_RANGE).color(brightness, brightness, brightness, 1.0F).endVertex();
-		//		bufferbuilder.vertex(matrix, -BOX_RENDER_RANGE, -BOX_RENDER_RANGE, BOX_RENDER_RANGE).color(brightness, brightness, brightness, 1.0F).endVertex();
-		//		bufferbuilder.vertex(matrix, -BOX_RENDER_RANGE, BOX_RENDER_RANGE, BOX_RENDER_RANGE).color(brightness, brightness, brightness, 1.0F).endVertex();
-		//		tessellator.end();
-		//
-		//		// back
-		//		brightness = 0.5f;
-		//		bufferbuilder.begin(GL11.GL_QUADS, format);
-		//		bufferbuilder.vertex(matrix, BOX_RENDER_RANGE, BOX_RENDER_RANGE, -BOX_RENDER_RANGE).color(brightness, brightness, brightness, 1.0F).endVertex();
-		//		bufferbuilder.vertex(matrix, BOX_RENDER_RANGE, -BOX_RENDER_RANGE, -BOX_RENDER_RANGE).color(brightness, brightness, brightness, 1.0F).endVertex();
-		//		bufferbuilder.vertex(matrix, -BOX_RENDER_RANGE, -BOX_RENDER_RANGE, -BOX_RENDER_RANGE).color(brightness, brightness, brightness, 1.0F).endVertex();
-		//		bufferbuilder.vertex(matrix, -BOX_RENDER_RANGE, BOX_RENDER_RANGE, -BOX_RENDER_RANGE).color(brightness, brightness, brightness, 1.0F).endVertex();
-		//		tessellator.end();
-		//
-		//		// top
-		//		brightness = 0.8f;
-		//		bufferbuilder.begin(GL11.GL_QUADS, format);
-		//		bufferbuilder.vertex(matrix, BOX_RENDER_RANGE, BOX_RENDER_RANGE, BOX_RENDER_RANGE).color(brightness, brightness, brightness, 1.0F).endVertex();
-		//		bufferbuilder.vertex(matrix, BOX_RENDER_RANGE, BOX_RENDER_RANGE, -BOX_RENDER_RANGE).color(brightness, brightness, brightness, 1.0F).endVertex();
-		//		bufferbuilder.vertex(matrix, -BOX_RENDER_RANGE, BOX_RENDER_RANGE, -BOX_RENDER_RANGE).color(brightness, brightness, brightness, 1.0F).endVertex();
-		//		bufferbuilder.vertex(matrix, -BOX_RENDER_RANGE, BOX_RENDER_RANGE, BOX_RENDER_RANGE).color(brightness, brightness, brightness, 1.0F).endVertex();
-		//		tessellator.end();
-		//
-		//		// bottom
-		//		brightness = 0.3f;
-		//		bufferbuilder.begin(GL11.GL_QUADS, format);
-		//		bufferbuilder.vertex(matrix, -BOX_RENDER_RANGE, -BOX_RENDER_RANGE, BOX_RENDER_RANGE).color(brightness, brightness, brightness, 1.0F).endVertex();
-		//		bufferbuilder.vertex(matrix, -BOX_RENDER_RANGE, -BOX_RENDER_RANGE, -BOX_RENDER_RANGE).color(brightness, brightness, brightness, 1.0F).endVertex();
-		//		bufferbuilder.vertex(matrix, BOX_RENDER_RANGE, -BOX_RENDER_RANGE, -BOX_RENDER_RANGE).color(brightness, brightness, brightness, 1.0F).endVertex();
-		//		bufferbuilder.vertex(matrix, BOX_RENDER_RANGE, -BOX_RENDER_RANGE, BOX_RENDER_RANGE).color(brightness, brightness, brightness, 1.0F).endVertex();
-		//		tessellator.end();
 
 		ms.popPose();
 
