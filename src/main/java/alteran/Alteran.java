@@ -74,7 +74,7 @@ public class Alteran {
     forgeBus.addListener(this::onLivingUpdate);
     forgeBus.addGenericListener(Entity.class, this::attachPlayerCap);
 
-    DeferredRegister<?>[] registers = {AlteranBiomes.BIOMES, AlteranSurfaceBuilders.SURFACE_BUILDERS};
+    DeferredRegister<?>[] registers = {AlteranBiomes.BIOMES, AlteranSurfaceBuilders.SURFACE_BUILDERS, AlteranFeatures.FEATURES};
 
     for (DeferredRegister<?> register : registers) {
       register.register(modBus);
@@ -96,6 +96,7 @@ public class Alteran {
       Registry.register(Registry.CHUNK_GENERATOR, DimensionRegistry.SPACE_SYSTEM, SpaceChunkGenerator.CODEC);
       Registry.register(Registry.BIOME_SOURCE, DimensionRegistry.BIOMES_ID, SpaceBiomeProvider.CODEC);
 
+      AlteranConfiguredFeatures.register();
     });
   }
 

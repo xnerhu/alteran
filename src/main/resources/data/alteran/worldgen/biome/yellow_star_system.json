@@ -17,7 +17,11 @@
   "player_spawn_friendly": false,
   "surface_builder": "alteran:space_surface_builder",
   "carvers": {},
-  "features": [],
+  "features": [
+    [
+      "alteran:asteroid"
+    ]
+  ],
   "starts": [],
   "creature_spawn_probability": 0,
   "spawners": {
