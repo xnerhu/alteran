@@ -26,7 +26,7 @@ public class CommandSetMomentum implements Command<CommandSource> {
     ServerPlayerEntity entity = context.getSource().getPlayerOrException();
     PlayerDataCapability cap = entity.getCapability(AlteranCapabilities.PLAYER_DATA).orElse(null);
 
-    cap.momentum = new Vector3d(0, 0, 0);
+    cap.clearMomentum();
 
     return 0;
   }

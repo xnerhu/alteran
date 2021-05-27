@@ -11,30 +11,60 @@ import net.minecraftforge.common.capabilities.ICapabilitySerializable;
 import net.minecraftforge.common.util.LazyOptional;
 
 public class PlayerDataCapability {
+  private final static String TAG_MOMENTUM_X = "momentum_x";
+  private final static String TAG_MOMENTUM_Y = "momentum_y";
+  private final static String TAG_MOMENTUM_Z = "momentum_z";
+
   public PlayerEntity player;
 
-  public Vector3d momentum = new Vector3d(0, 0, 0);
+  private Vector3d momentum = new Vector3d(0, 0, 0);
 
   public PlayerDataCapability(PlayerEntity player) {
     this.player = player;
-
   }
+
+  public boolean hasMomentum() {
+    return this.momentum != null;
+  }
+
+  public Vector3d getMomentum() {
+    return this.momentum;
+  }
+
+  public void setMomentum(Vector3d momentum) {
+    this.momentum = momentum;
+  }
+
+  public void clearMomentum() {
+    this.momentum = null;
+  }
+
 
   public CompoundNBT serializeNBT() {
     CompoundNBT tag = new CompoundNBT();
-    tag.putDouble("momentum_x", this.momentum.x);
-    tag.putDouble("momentum_y", this.momentum.y);
-    tag.putDouble("momentum_z", this.momentum.z);
+
+    if (this.momentum != null) {
+      tag.putDouble(TAG_MOMENTUM_X, this.momentum.x);
+      tag.putDouble(TAG_MOMENTUM_Y, this.momentum.y);
+      tag.putDouble(TAG_MOMENTUM_Z, this.momentum.z);
+    } else if (tag.contains(TAG_MOMENTUM_X)) {
+      tag.remove(TAG_MOMENTUM_X);
+      tag.remove(TAG_MOMENTUM_Y);
+      tag.remove(TAG_MOMENTUM_Z);
+    }
 
     return tag;
   }
 
   public void deserializeNBT(CompoundNBT nbt) {
-    if (nbt.contains("momentum_x")) {
-      double x = nbt.getDouble("momentum_x");
-      double y = nbt.getDouble("momentum_y");
-      double z = nbt.getDouble("momentum_z");
+    if (nbt.contains(TAG_MOMENTUM_X)) {
+      double x = nbt.getDouble(TAG_MOMENTUM_X);
+      double y = nbt.getDouble(TAG_MOMENTUM_Y);
+      double z = nbt.getDouble(TAG_MOMENTUM_Z);
+
       this.momentum = new Vector3d(x, y, z);
+    } else {
+      this.momentum = null;
     }
   }
 

@@ -7,6 +7,8 @@ import alteran.components.dimensions.DimensionId;
 import alteran.components.dimensions.DimensionStorage;
 import alteran.components.space.world.SpaceChunkGenerator;
 import alteran.dimensions.DimensionRegistry;
+import net.minecraft.entity.Entity;
+import net.minecraft.entity.LivingEntity;
 import net.minecraft.util.RegistryKey;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.registry.Registry;
@@ -77,5 +79,11 @@ public class SpaceSystemManager {
       }
     }
     return world;
+  }
+
+  public boolean isEntityInSpace(Entity entity) {
+    final DimensionId dimId = DimensionId.fromResourceLocation(new ResourceLocation(AlteranCommon.modId, "xd"));
+
+    return dimId.sameDimension(entity.level);
   }
 }
