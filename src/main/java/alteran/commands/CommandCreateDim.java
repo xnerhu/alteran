@@ -1,5 +1,7 @@
 package alteran.commands;
 
+import alteran.common.AlteranCommon;
+import alteran.components.dimensions.DimensionId;
 import alteran.components.space.SpaceSystemManager;
 import com.mojang.brigadier.Command;
 import com.mojang.brigadier.CommandDispatcher;
@@ -10,6 +12,9 @@ import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import net.minecraft.command.CommandSource;
 import net.minecraft.command.Commands;
+import net.minecraft.entity.player.ServerPlayerEntity;
+import net.minecraft.util.Direction;
+import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.text.StringTextComponent;
 import net.minecraft.util.text.TextFormatting;
 
@@ -33,6 +38,11 @@ public class CommandCreateDim implements Command<CommandSource> {
       context.getSource().sendSuccess(new StringTextComponent(TextFormatting.RED + error), true);
     }
 
+    ServerPlayerEntity player = context.getSource().getPlayerOrException();
+    double x = player.position().x();
+    double z = player.position().z();
+    DimensionId id = DimensionId.fromResourceLocation(new ResourceLocation(AlteranCommon.modId, name));
+    TeleportationTools.teleport(player, id, x, 200, z, Direction.NORTH);
     return 0;
   }
 }
