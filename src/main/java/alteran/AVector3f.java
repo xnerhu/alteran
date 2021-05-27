@@ -1,11 +1,15 @@
 package alteran;
 
+import net.minecraft.util.math.vector.Vector3d;
 import net.minecraft.util.math.vector.Vector3f;
 
 public class AVector3f {
 	public float x;
 	public float y;
 	public float z;
+
+	public static AVector3f forward = new AVector3f(0, 0, 1f);
+	public static AVector3f up = new AVector3f(0, 1f, 0);
 
 	public AVector3f() {
 	}
@@ -14,6 +18,12 @@ public class AVector3f {
 		this.x = x;
 		this.y = y;
 		this.z = z;
+	}
+
+	public AVector3f(double x, double y, double z) {
+		this.x = (float) x;
+		this.y = (float) y;
+		this.z = (float) z;
 	}
 
 	public AVector3f(AVector3f vector) {
@@ -26,6 +36,12 @@ public class AVector3f {
 		this.x = vector.x();
 		this.y = vector.y();
 		this.z = vector.z();
+	}
+
+	public AVector3f(Vector3d vector) {
+		this.x = (float) vector.x;
+		this.y = (float) vector.y;
+		this.z = (float) vector.z;
 	}
 
 	public AVector3f substract(AVector3f vector) {

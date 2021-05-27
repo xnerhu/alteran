@@ -17,7 +17,6 @@ public class CommandReloadSpaceSkyRenderer implements Command<CommandSource> {
 
 	@Override
 	public int run(CommandContext<CommandSource> context) {
-		System.out.println(RenderSpaceSky.getInstance() == null);
 		RenderSpaceSky.getInstance().reload();
 		return 0;
 	}
