@@ -196,9 +196,36 @@ public class RenderSpaceSky implements ISkyRenderHandler {
 
     // TODO(sentialx): sort order by distance
 
-    renderStar(ms, "textures/celestial/sun2.png", new AVector3f(0, 0, 100), 1000);
-    renderPlanet(ms, 0, 0, 0, 100, false, true, "textures/celestial/earth2.jpg");
-  }
+		renderStar(ms, "textures/celestial/sun2.png", new AVector3f(0, 0, 100), 100, new AVector3f(1f, 1f, 1f), 1f);
+		renderStar(ms, "textures/celestial/ring.png", new AVector3f(0, 0, 0), 4.15f, new AVector3f(0.3f, 0.5f, 1f), 0.9f);
+		renderPlanet(ms, 0, 0, 0, 5, false, true, "textures/celestial/earth2.jpg");
+
+
+	}
+
+	public static Quaternion lookAt(AVector3f sourcePoint, AVector3f destPoint) {
+		AVector3f forwardVector = destPoint.substract(sourcePoint).normalize();
+
+		float dot = AVector3f.forward.dot(forwardVector);
+
+		if (Math.abs(dot - (-1.0f)) < 0.000001f) {
+			return new Quaternion(3.1415926535897932f, AVector3f.up.x, AVector3f.up.y, AVector3f.up.z);
+		}
+		if (Math.abs(dot - (1.0f)) < 0.000001f) {
+			return new Quaternion(0, 0, 0, 0);
+		}
+
+		float rotAngle = (float) Math.acos(dot);
+		AVector3f rotAxis = AVector3f.forward.cross(forwardVector).normalize();
+		return createFromAxisAngle(rotAxis, rotAngle);
+	}
+
+	// just in case you need that function also
+	public static Quaternion createFromAxisAngle(AVector3f axis, float angle) {
+		float halfAngle = angle * .5f;
+		float s = (float) Math.sin(halfAngle);
+		return new Quaternion((float) Math.cos(halfAngle), axis.x * s, axis.y * s, axis.z * s);
+	}
 
   private float calcPointLight(AVector3f lightSource, AVector3f normal, AVector3f fragPos) {
     AVector3f lightDir = lightSource.substract(fragPos).normalize();
@@ -226,12 +253,12 @@ public class RenderSpaceSky implements ISkyRenderHandler {
     return ambient + diffuse;
   }
 
-  public void renderStar(MatrixStack ms, String texture, AVector3f pos, float scale) {
-    RenderSystem.disableFog();
-    RenderSystem.disableAlphaTest();
-    RenderSystem.enableBlend();
-    RenderSystem.enableTexture();
-    RenderSystem.blendFuncSeparate(GlStateManager.SourceFactor.SRC_ALPHA, GlStateManager.DestFactor.ONE_MINUS_SRC_ALPHA, GlStateManager.SourceFactor.ONE, GlStateManager.DestFactor.ZERO);
+	public void renderStar(MatrixStack ms, String texture, AVector3f pos, float scale, AVector3f color, float alpha) {
+		RenderSystem.disableFog();
+		RenderSystem.disableAlphaTest();
+		RenderSystem.enableBlend();
+		RenderSystem.enableTexture();
+		RenderSystem.blendFuncSeparate(GlStateManager.SourceFactor.SRC_ALPHA, GlStateManager.DestFactor.ONE_MINUS_SRC_ALPHA, GlStateManager.SourceFactor.ONE, GlStateManager.DestFactor.ZERO);
 
     Tessellator tessellator = Tessellator.getInstance();
     BufferBuilder bufferbuilder = tessellator.getBuilder();
@@ -239,24 +266,28 @@ public class RenderSpaceSky implements ISkyRenderHandler {
 
     ms.pushPose();
 
-    Vector3d v = mc.gameRenderer.getMainCamera().getPosition();
+		AVector3f v = new AVector3f(mc.gameRenderer.getMainCamera().getPosition());
+		AVector3f p = new AVector3f((pos.x - v.x) / scale, (pos.y - v.y) / scale, (pos.z - v.z) / scale);
 
-    ms.translate((pos.x - v.x) / scale, (pos.y - v.y) / scale, (pos.z - v.z) / scale);
+		ms.translate(p.x, p.y, p.z);
 
     float size = 1f;
 
     Matrix4f matrix = ms.last().pose();
 
-    float b = 1f;
+		float b = 1f;
+		Quaternion q = lookAt(v, p);
 
-    VertexFormat format = DefaultVertexFormats.POSITION_TEX_COLOR;
-    Minecraft.getInstance().textureManager.bind(new ResourceLocation(AlteranCommon.modId, texture));
-    bufferbuilder.begin(GL11.GL_QUADS, format);
-    bufferbuilder.vertex(matrix, -size, size, 0).uv(0f, 0f).color(b, b, b, b).endVertex();
-    bufferbuilder.vertex(matrix, size, size, 0).uv(1f, 0f).color(b, b, b, b).endVertex();
-    bufferbuilder.vertex(matrix, size, -size, 0).uv(1f, 1f).color(b, b, b, b).endVertex();
-    bufferbuilder.vertex(matrix, -size, -size, 0).uv(0f, 1f).color(b, b, b, b).endVertex();
-    tessellator.end();
+		ms.mulPose(q);
+
+		VertexFormat format = DefaultVertexFormats.POSITION_TEX_COLOR;
+		Minecraft.getInstance().textureManager.bind(new ResourceLocation(AlteranCommon.modId, texture));
+		bufferbuilder.begin(GL11.GL_QUADS, format);
+		bufferbuilder.vertex(matrix, -size, size, 0).uv(0f, 0f).color(color.x, color.y, color.z, alpha).endVertex();
+		bufferbuilder.vertex(matrix, size, size, 0).uv(1f, 0f).color(color.x, color.y, color.z, alpha).endVertex();
+		bufferbuilder.vertex(matrix, size, -size, 0).uv(1f, 1f).color(color.x, color.y, color.z, alpha).endVertex();
+		bufferbuilder.vertex(matrix, -size, -size, 0).uv(0f, 1f).color(color.x, color.y, color.z, alpha).endVertex();
+		tessellator.end();
 
     ms.popPose();
 
