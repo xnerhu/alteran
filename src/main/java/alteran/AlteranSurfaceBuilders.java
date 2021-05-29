@@ -9,7 +9,9 @@ import net.minecraftforge.registries.DeferredRegister;
 import net.minecraftforge.registries.ForgeRegistries;
 
 public class AlteranSurfaceBuilders {
-  public static final DeferredRegister<SurfaceBuilder<?>> SURFACE_BUILDERS = DeferredRegister.create(ForgeRegistries.SURFACE_BUILDERS, AlteranCommon.modId);
+	public static final DeferredRegister<SurfaceBuilder<?>> SURFACE_BUILDERS = DeferredRegister
+		.create(ForgeRegistries.SURFACE_BUILDERS, AlteranCommon.modId);
 
-  public static final RegistryObject<SurfaceBuilder<SurfaceBuilderConfig>> SPACE_SURFACE_BUILDER = SURFACE_BUILDERS.register("space_surface_builder", () -> new SpaceSurfaceBuilder(SurfaceBuilderConfig.CODEC));
+	public static final RegistryObject<SurfaceBuilder<SurfaceBuilderConfig>> SPACE_SURFACE_BUILDER = SURFACE_BUILDERS
+		.register("space_surface_builder", () -> new SpaceSurfaceBuilder(SurfaceBuilderConfig.CODEC));
 }

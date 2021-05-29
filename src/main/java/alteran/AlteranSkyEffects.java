@@ -13,5 +13,6 @@ import net.minecraftforge.registries.DeferredRegister;
 import net.minecraftforge.registries.ForgeRegistries;
 
 public class AlteranSkyEffects {
-  public static ResourceLocation EFFECT_YELLOW_STAR_SYSTEM = new ResourceLocation(AlteranCommon.modId, "yellow_star_system");
+	public static ResourceLocation EFFECT_YELLOW_STAR_SYSTEM = new ResourceLocation(AlteranCommon.modId,
+		"yellow_star_system");
 }

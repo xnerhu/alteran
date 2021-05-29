@@ -6,6 +6,6 @@ import net.minecraftforge.common.capabilities.Capability;
 import net.minecraftforge.common.capabilities.CapabilityInject;
 
 public class AlteranCapabilities {
-  @CapabilityInject(PlayerDataCapability.class)
-  public static final Capability<PlayerDataCapability> PLAYER_DATA = null;
+	@CapabilityInject(PlayerDataCapability.class)
+	public static final Capability<PlayerDataCapability> PLAYER_DATA = null;
 }

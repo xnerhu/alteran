@@ -10,15 +10,18 @@ import net.minecraftforge.registries.DeferredRegister;
 import net.minecraftforge.registries.ForgeRegistries;
 
 public class AlteranBiomes {
-  public static final DeferredRegister<Biome> BIOMES = DeferredRegister.create(ForgeRegistries.BIOMES, AlteranCommon.modId);
+	public static final DeferredRegister<Biome> BIOMES = DeferredRegister
+		.create(ForgeRegistries.BIOMES, AlteranCommon.modId);
 
-  public static RegistryKey<Biome> yellowStarSystem = register("yellow_star_system");
+	public static RegistryKey<Biome> yellowStarSystem = register("yellow_star_system");
 
-  private static RegistryKey<Biome> register(String name) {
-    return RegistryKey.create(Registry.BIOME_REGISTRY, new ResourceLocation(AlteranCommon.modId, name));
-  }
+	private static RegistryKey<Biome> register(String name) {
+		return RegistryKey.create(Registry.BIOME_REGISTRY, new ResourceLocation(AlteranCommon.modId, name));
+	}
 
-  public static void registerToDictionary() {
-    BiomeDictionary.addTypes(yellowStarSystem, BiomeDictionary.Type.VOID, BiomeDictionary.Type.COLD, BiomeDictionary.Type.DEAD, BiomeDictionary.Type.SPOOKY);
-  }
+	public static void registerToDictionary() {
+		BiomeDictionary
+			.addTypes(yellowStarSystem, BiomeDictionary.Type.VOID, BiomeDictionary.Type.COLD, BiomeDictionary.Type.DEAD,
+				BiomeDictionary.Type.SPOOKY);
+	}
 }

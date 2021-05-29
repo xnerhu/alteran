@@ -74,7 +74,7 @@ public class Alteran {
 		forgeBus.addListener(this::onLivingUpdate);
 		forgeBus.addGenericListener(Entity.class, this::attachPlayerCap);
 
-    	DeferredRegister<?>[] registers = {AlteranBiomes.BIOMES, AlteranSurfaceBuilders.SURFACE_BUILDERS, AlteranFeatures.FEATURES};
+		DeferredRegister<?>[] registers = {AlteranBiomes.BIOMES, AlteranSurfaceBuilders.SURFACE_BUILDERS, AlteranFeatures.FEATURES};
 
 		for (DeferredRegister<?> register : registers) {
 			register.register(modBus);
@@ -88,7 +88,8 @@ public class Alteran {
 
 	public void onCommonSetup(FMLCommonSetupEvent e) {
 		AlteranNetwork.registerMessages("alteran");
-		CapabilityManager.INSTANCE.register(PlayerDataCapability.class, new PlayerDataCapability.Storage(), () -> new PlayerDataCapability(null));
+		CapabilityManager.INSTANCE
+			.register(PlayerDataCapability.class, new PlayerDataCapability.Storage(), () -> new PlayerDataCapability(null));
 
 		e.enqueueWork(() -> {
 			AlteranBiomes.registerToDictionary();
@@ -106,7 +107,8 @@ public class Alteran {
 
 			Field field = DimensionRenderInfo.class.getField("EFFECTS");
 			field.setAccessible(true);
-			Object2ObjectMap<ResourceLocation, DimensionRenderInfo> effects = (Object2ObjectMap<ResourceLocation, DimensionRenderInfo>) field.get(null);
+			Object2ObjectMap<ResourceLocation, DimensionRenderInfo> effects = (Object2ObjectMap<ResourceLocation, DimensionRenderInfo>) field
+				.get(null);
 			effects.put(AlteranSkyEffects.EFFECT_YELLOW_STAR_SYSTEM, new YellowStarSystemRenderInfo());
 		} catch (IllegalAccessException | NoSuchFieldException | IOException x) {
 			x.printStackTrace();
@@ -157,7 +159,8 @@ public class Alteran {
 
 			PlayerDataCapability data = entity.getCapability(AlteranCapabilities.PLAYER_DATA).orElse(null);
 
-			if (!entity.isShiftKeyDown() && !entity.isOnGround() && (data.momentum.x == 0 && data.momentum.y == 0 && data.momentum.z == 0)) {
+			if (!entity.isShiftKeyDown() && !entity
+				.isOnGround() && (data.momentum.x == 0 && data.momentum.y == 0 && data.momentum.z == 0)) {
 				Vector3d forward = entity.getForward();
 				double speed = entity.getSpeed();
 
@@ -171,8 +174,8 @@ public class Alteran {
 	public void attachPlayerCap(AttachCapabilitiesEvent<Entity> e) {
 		Entity obj = e.getObject();
 
-		if (obj instanceof PlayerEntity)
-			e.addCapability(new ResourceLocation(AlteranCommon.modId, "player_data"), new PlayerDataCapability.Provider(new PlayerDataCapability((PlayerEntity) obj)));
+		if (obj instanceof PlayerEntity) e.addCapability(new ResourceLocation(AlteranCommon.modId, "player_data"),
+			new PlayerDataCapability.Provider(new PlayerDataCapability((PlayerEntity) obj)));
 	}
 }
 

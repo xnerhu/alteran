@@ -1,5 +1,6 @@
 package alteran;
 
+import net.minecraft.util.math.vector.Quaternion;
 import net.minecraft.util.math.vector.Vector3d;
 import net.minecraft.util.math.vector.Vector3f;
 
@@ -66,9 +67,18 @@ public class AVector3f {
 		return x * vector.x + y * vector.y + z * vector.z;
 	}
 
-	public float length() {
-		return (float) Math.sqrt(x * x + y * y + z * z);
+	public AVector3f mul(float scale) {
+		return new AVector3f(x * scale, y * scale, z * scale);
 	}
+
+	public float squaredLength() {
+		return x * x + y * y + z * z;
+	}
+
+	public float length() {
+		return (float) Math.sqrt(squaredLength());
+	}
+
 
 	@Override
 	public String toString() {
