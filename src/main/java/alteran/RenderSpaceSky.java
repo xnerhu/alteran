@@ -5,6 +5,9 @@ import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.nio.Buffer;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.nio.FloatBuffer;
 import java.util.ArrayList;
 import java.util.List;
@@ -21,6 +24,7 @@ import com.mojang.serialization.ListBuilder;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.entity.player.ClientPlayerEntity;
 import net.minecraft.client.renderer.GLAllocation;
+import net.minecraft.client.renderer.WorldVertexBufferUploader;
 import net.minecraft.client.renderer.texture.TextureManager;
 import net.minecraft.client.renderer.vertex.VertexBuffer;
 import net.minecraft.client.renderer.vertex.VertexFormat;
@@ -28,6 +32,7 @@ import net.minecraft.client.world.ClientWorld;
 import net.minecraft.client.renderer.BufferBuilder;
 import net.minecraft.client.renderer.Tessellator;
 import net.minecraft.client.renderer.vertex.DefaultVertexFormats;
+import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.vector.*;
@@ -80,7 +85,7 @@ public class RenderSpaceSky implements ISkyRenderHandler {
 	public void init() {
 		lightSources.clear();
 
-		addLightSource(new AVector3f(0, 0, 1f));
+		addLightSource(new AVector3f(0, 0, -1f));
 		//addLightSource(new AVector3f(0, 100f, 100f));
 
 		generateStarData(15000);
@@ -97,6 +102,9 @@ public class RenderSpaceSky implements ISkyRenderHandler {
 		shaders.add(
 			new Shader("C:\\Users\\Senti\\Desktop\\alteran\\src\\main\\resources\\assets\\alteran\\shaders/atmosphere.vsh",
 				"C:\\Users\\Senti\\Desktop\\alteran\\src\\main\\resources\\assets\\alteran\\shaders/atmosphere.fsh"));
+
+		OBJModel model = ModelLoader.getModel(ModelLoader.getModelResource("sphere.obj"));
+		model.modelInitialized = false;
 	}
 
 	private void makeFarFog(BufferBuilder buffer, double minSize, double maxSize, int count, long seed) {
@@ -182,6 +190,7 @@ public class RenderSpaceSky implements ISkyRenderHandler {
 	}
 
 	private float lastTime = 0;
+	private float partialChuj = 0;
 
 	@Override
 	public void render(int ticks, float partialTicks, MatrixStack ms, ClientWorld world, Minecraft mc) {
@@ -228,15 +237,18 @@ public class RenderSpaceSky implements ISkyRenderHandler {
 
 		//float earthScale = 10000;
 
-		float earthScale = 10f;
+		float earthScale = 1f;
 
 		//		renderStar(ms, "textures/celestial/sun2.png", new AVector3f(0, 0, earthScale * 105), earthScale * 100,
 		//			new AVector3f(1f, 1f, 1f), 1f);
 		//renderPlanet(ms, 0, 0, earthScale * 75, earthScale * 100, true, true, "textures/celestial/sun.jpg", ticks);
 		//		renderStar(ms, "textures/celestial/ring.png", new AVector3f(0, 0, 0), 0.84f * earthScale,
 		//			new AVector3f(0.3f, 0.5f, 1f), 0.9f);
-		renderPlanet(ms, 0, 0, 0, earthScale, "textures/celestial/earth2.jpg");
-		renderAtmosphere(ms);
+		partialChuj = partialTicks;
+		renderPlanet(ms, 0, 0, 0, earthScale * 1000, "textures/celestial/gaseous4.png", true);
+		// renderPlanet(ms, 0, 0, 100, earthScale * 100, "textures/celestial/gaseous1.png", false);
+
+		//renderAtmosphere(ms, 0, 0, 0, earthScale * 1.025f);
 
 		lastTime += partialTicks;
 	}
@@ -373,71 +385,87 @@ public class RenderSpaceSky implements ISkyRenderHandler {
 		RenderSystem.enableFog();
 	}
 
-	private void renderPlanet(MatrixStack ms, float x, float y, float z, float scale, String texture) {
-		Tessellator tessellator = Tessellator.getInstance();
-		BufferBuilder bufferbuilder = tessellator.getBuilder();
+	private void renderPlanet(MatrixStack ms, float x, float y, float z, float s, String texture, boolean emitsLight) {
 		Minecraft mc = Minecraft.getInstance();
 
 		RenderSystem.disableFog();
 		RenderSystem.enableTexture();
 		RenderSystem.disableBlend();
+
+		//RenderSystem.enableLighting();
 		//GL20.glBlendFunc(GL20.GL_ONE, GL20.GL_ONE);
 
 		ms.pushPose();
 
-		Vector3d v = mc.gameRenderer.getMainCamera().getPosition();
+		AVector3f camPos = new AVector3f(mc.gameRenderer.getMainCamera().getPosition());
 
 		Minecraft.getInstance().textureManager.bind(new ResourceLocation(AlteranCommon.modId, texture));
 		OBJModel model = ModelLoader.getModel(ModelLoader.getModelResource("sphere.obj"));
 
-		AQuaternion q = AQuaternion.angleAxis(((lastTime * 0.005f) % 360), new AVector3f(0, 1f, 0));
+		PlayerEntity playerentity = (PlayerEntity) mc.getCameraEntity();
+		float f = playerentity.walkDist - playerentity.walkDistO;
+		float f1 = -(playerentity.walkDist + f * partialChuj);
+		float f2 = MathHelper.lerp(partialChuj, playerentity.oBob, playerentity.bob);
+		ms.mulPose(Vector3f.XP.rotationDegrees(-(Math.abs(MathHelper.cos(f1 * (float) Math.PI - 0.2F) * f2) * 5.0F)));
+		ms.mulPose(Vector3f.ZP.rotationDegrees(-(MathHelper.sin(f1 * (float) Math.PI) * f2 * 3.0F)));
+		ms.translate((double) -(MathHelper.sin(f1 * (float) Math.PI) * f2 * 0.5F),
+			(double) -(-Math.abs(MathHelper.cos(f1 * (float) Math.PI) * f2)), 0.0D);
 
-		Matrix4f matrix = ms.last().pose();
+		AQuaternion q = AQuaternion.angleAxis(((lastTime * 0.006f) % 360), new AVector3f(1f, 0.25f, 0.1f));
 
-		ms.translate((x - v.x) / scale, (y - v.y) / scale, (z - v.z) / scale);
+		AVector3f pos = new AVector3f(x, y, z).substract(camPos);
+
+		// ms.mulPose(q.toQuaternion());
+
+		if (camPos.distance(new AVector3f(x, y, z)) >= s) {
+			pos = pos.mul(1 / s);
+
+		}
+
+
+		FloatBuffer projection = GLAllocation.createFloatBuffer(16);
+		FloatBuffer view = GLAllocation.createFloatBuffer(16);
+		FloatBuffer modelView = GLAllocation.createFloatBuffer(16);
+
+		ms.translate(pos.x, pos.y, pos.z);
+
+		Matrix4f viewInv = ms.last().pose().copy();
+		viewInv.invert();
+		viewInv.store(view);
+
+		GL11.glGetFloatv(GL11.GL_PROJECTION_MATRIX, projection);
+		GL11.glGetFloatv(GL11.GL_MODELVIEW_MATRIX, modelView);
+
+		float currentScale = 1f;
+
+		// Fix clipping when low distance
+		if (camPos.distance(new AVector3f(x, y, z)) < s) {
+			ms.scale(s, s, s);
+			currentScale = s;
+		}
+
 		ms.mulPose(q.toQuaternion());
 
-		VertexFormat format = DefaultVertexFormats.POSITION_TEX_COLOR;
+		//		float[] floatArray = new float[modelView.limit()];
+		//		modelView.get(floatArray);
+		//
+		//		Matrix4f modelViewMat = new Matrix4f(floatArray.clone());
+		//		modelViewMat.invert();
+		//		modelViewMat.store(view);
 
-		for (int i = 0; i < model.vertices.length / 9; i++) {
-			float x1 = model.vertices[i * 9];
-			float y1 = model.vertices[i * 9 + 1];
-			float z1 = model.vertices[i * 9 + 2];
+		Shader shader = shaders.get(0);
 
-			AVector3f v1 = new AVector3f(x1, y1, z1);
+		shader.start();
 
-			float x2 = model.vertices[i * 9 + 3];
-			float y2 = model.vertices[i * 9 + 4];
-			float z2 = model.vertices[i * 9 + 5];
+		model.render(ms);
 
-			AVector3f v2 = new AVector3f(x2, y2, z2);
+		GL20.glUniformMatrix4fv(shader.getUniform("projection"), false, projection);
+		GL20.glUniformMatrix4fv(shader.getUniform("viewInverseMat"), false, view);
+		GL20.glUniformMatrix4fv(shader.getUniform("modelView"), false, modelView);
+		GL20.glUniform1f(shader.getUniform("currentScale"), currentScale);
+		GL20.glUniform3f(shader.getUniform("camPos"), camPos.x, camPos.y, camPos.z);
 
-			float x3 = model.vertices[i * 9 + 6];
-			float y3 = model.vertices[i * 9 + 7];
-			float z3 = model.vertices[i * 9 + 8];
-
-			AVector3f v3 = new AVector3f(x3, y3, z3);
-
-			float texU1 = model.textureCoords[i * 6];
-			float texV1 = model.textureCoords[i * 6 + 1];
-
-			float texU2 = model.textureCoords[i * 6 + 2];
-			float texV2 = model.textureCoords[i * 6 + 3];
-
-			float texU3 = model.textureCoords[i * 6 + 4];
-			float texV3 = model.textureCoords[i * 6 + 5];
-
-			float brightness = 1f;
-
-			bufferbuilder.begin(GL11.GL_POLYGON, format);
-			bufferbuilder.vertex(matrix, x1, y1, z1).uv(texU1, texV1).color(brightness, brightness, brightness, 1f)
-				.endVertex();
-			bufferbuilder.vertex(matrix, x2, y2, z2).uv(texU2, texV2).color(brightness, brightness, brightness, 1f)
-				.endVertex();
-			bufferbuilder.vertex(matrix, x3, y3, z3).uv(texU3, texV3).color(brightness, brightness, brightness, 1f)
-				.endVertex();
-			tessellator.end();
-		}
+		shader.stop();
 
 		ms.popPose();
 
@@ -447,46 +475,99 @@ public class RenderSpaceSky implements ISkyRenderHandler {
 		RenderSystem.enableFog();
 	}
 
-	private void renderAtmosphere(MatrixStack ms) {
-		RenderSystem.disableFog();
-		RenderSystem.enableTexture();
-		RenderSystem.enableBlend();
-		GL20.glBlendFunc(GL20.GL_ONE, GL20.GL_ONE);
+	float[][] ZERO_MATRIX = {{0, 0, 0, 0}, {0, 0, 0, 0}, {0, 0, 0, 0}, {0, 0, 0, 0}};
 
-		ms.pushPose();
 
-		FloatBuffer projection = GLAllocation.createFloatBuffer(16);
-		FloatBuffer modelview = GLAllocation.createFloatBuffer(16);
-		GlStateManager._getMatrix(GL11.GL_PROJECTION_MATRIX, projection);
-		GlStateManager._getMatrix(GL11.GL_MODELVIEW_MATRIX, modelview);
-
-		for (Shader shader : shaders) {
-			shader.start();
-			GL20.glUniformMatrix4fv(shader.getUniform("projection"), false, projection);
-			GL20.glUniformMatrix4fv(shader.getUniform("modelview"), false, modelview);
+	float[][] multiplymat4(float[][] c, float[][] d) {
+		float[][] out = new float[4][4];
+		for (int i = 0; i < 4; ++i) {
+			for (int j = 0; j < 4; ++j) {
+				for (int k = 0; k < 4; ++k) {
+					out[i][j] += c[i][k] * d[k][j];
+				}
+			}
 		}
 
+		return out;
+	}
 
-		OBJModel model = ModelLoader.getModel(ModelLoader.getModelResource("sphere.obj"));
+	float[][] translate(float x, float y, float z) {
+		float[][] c = new float[4][4];
+		c[0][3] = x;
+		c[1][3] = y;
+		c[2][3] = z;
+		return c;
+	}
 
-		AQuaternion q = AQuaternion.angleAxis(((lastTime * 0.005f) % 360), new AVector3f(0, 1f, 0));
+	float[][] translatevec3(AVector3f v) {
+		return translate(v.x, v.y, v.z);
+	}
 
-		//ms.translate((x - v.x) / scale, (y - v.y) / scale, (z - v.z) / scale);
-		//ms.mulPose(q.toQuaternion());
+	float[][] scalevec4(float x, float y, float z) {
+		float[][] c = new float[4][4];
+		c[0][0] = x;
+		c[1][1] = y;
+		c[2][2] = z;
+		return c;
+	}
 
 
-		model.render();
+	float[][] scalevec3(AVector3f v) {
+		return scalevec4(v.x, v.y, v.z);
+	}
 
-		for (Shader shader : shaders) {
-			shader.stop();
+	float[][] scale(float value) {
+		return scalevec4(value, value, value);
+	}
+
+	float[] flatten(float[][] data) {
+		ArrayList<Float> list = new ArrayList<Float>();
+
+		for (int i = 0; i < data.length; i++) {
+			for (int j = 0; j < data[i].length; j++) {
+				list.add(data[i][j]);
+			}
 		}
 
-		ms.popPose();
+		float[] arr = new float[list.size()];
 
-		RenderSystem.enableTexture();
-		RenderSystem.enableBlend();
-		RenderSystem.enableAlphaTest();
-		RenderSystem.enableFog();
+		for (int i = 0; i < data.length; i++) {
+			arr[i] = list.get(i);
+		}
+
+		return arr;
+	}
+
+	float[][] transposemat4(float[][] a) {
+		float[][] out = new float[4][4];
+		for (int i = 0; i < 4; i++) {
+			for (int j = 0; j < 4; j++) {
+				out[j][i] = a[i][j];
+			}
+		}
+		return out;
+	}
+
+	float[] multiplymat4vec4(float[][] a, float[] v) {
+		float[] vout = {0, 0, 0, 0};
+		float temp = 0;
+		float[] u = {0, 0, 0, 0};
+		u[0] = v[0];
+		u[1] = v[1];
+		u[2] = v[2];
+		u[3] = v[3];
+		for (int i = 0; i < 4; i++) {
+			for (int j = 0; j < 4; j++) {
+				temp += a[i][j] * u[j];
+			}
+			u[i] = temp;
+			temp = 0;
+		}
+		vout[0] = u[0];
+		vout[1] = u[1];
+		vout[2] = u[2];
+		vout[3] = u[3];
+		return vout;
 	}
 
 	private void renderBuffer(MatrixStack matrixStackIn, VertexBuffer buffer, VertexFormat format, float r, float g, float b, float a) {
@@ -522,14 +603,14 @@ public class RenderSpaceSky implements ISkyRenderHandler {
 
 		for (int i = 0; i < numberOfStars; ++i) {
 			// probably frequency
-			double c0 = 2f;
+			double c0 = 2.4f;
 			double c1 = 0.8f;
 			double d0 = random.nextFloat() * c0 - c1;
 			double d1 = random.nextFloat() * c0 - c1;
 			double d2 = random.nextFloat() * c0 - c1;
 			//size
-			double max = 0.2f;
-			double min = 0.05f;
+			double max = 0.09f;
+			double min = 0.06f;
 			double d3 = random.nextFloat() * (max - min) + min;
 			double d4 = d0 * d0 + d1 * d1 + d2 * d2;
 			if (d4 < 1.0D && d4 > 0.01D) {
@@ -560,7 +641,7 @@ public class RenderSpaceSky implements ISkyRenderHandler {
 					double d25 = d24 * d9 - d22 * d10;
 					double d26 = d22 * d9 + d24 * d10;
 					bufferBuilder.vertex(d5 + d25, d6 + d23, d7 + d26)
-						.color(randBetween(0.6f, 1f), randBetween(0.6f, 1f), randBetween(0.6f, 1f), randBetween(0.7f, 1f))
+						.color(randBetween(0.8f, 1f), randBetween(0.8f, 1f), randBetween(0.8f, 1f), randBetween(0.85f, 1f))
 						.endVertex();
 				}
 			}

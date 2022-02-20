@@ -41,6 +41,7 @@ public class Shader {
 
 			GL20.glDeleteShader(shaderID);
 		}
+
 		return shaderID;
 	}
 
@@ -53,9 +54,11 @@ public class Shader {
 		GL20.glLinkProgram(programId);
 		GL20.glValidateProgram(programId);
 
-//		int vPosition = GL20.glGetAttribLocation(vertexShaderID, "aPos");
-		//		GL20.glEnableVertexAttribArray(vPosition);
-		//		GL20.glVertexAttribPointer(vPosition, 3, GL20.GL_FLOAT, false, 3 * 4, (long) 0);
+		int logLength = GL20.glGetProgrami(programId, GL20.GL_INFO_LOG_LENGTH);
+		if (logLength > 0) {
+			System.err.println(GL20.glGetProgramInfoLog(programId, logLength));
+			System.err.println("Could not link shader.");
+		}
 	}
 
 	public void start() {
@@ -72,7 +75,7 @@ public class Shader {
 
 	public int getUniform(String name) {
 		int result = GL20.glGetUniformLocation(programId, name);
-		if (result == -1) System.err.println("Could not find uniform variable '" + name + "'!");
+		//		if (result == -1) System.err.println("Could not find uniform variable '" + name + "'!");
 		return GL20.glGetUniformLocation(programId, name);
 	}
 
@@ -82,8 +85,6 @@ public class Shader {
 
 	public void delete() {
 		stop();
-		GL20.glDetachShader(programId, vertexShaderID);
-		GL20.glDetachShader(programId, fragmentShaderID);
 		GL20.glDeleteShader(vertexShaderID);
 		GL20.glDeleteShader(fragmentShaderID);
 		GL20.glDeleteProgram(programId);

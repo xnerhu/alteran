@@ -30,14 +30,11 @@ public class OBJLoader {
 
 			while ((line = reader.readLine()) != null) {
 
-				if (line.startsWith("v "))
-					vertices.add(splitToVector(line));
+				if (line.startsWith("v ")) vertices.add(splitToVector(line));
 
-				else if (line.startsWith("vt "))
-					textures.add(splitToVector2(line));
+				else if (line.startsWith("vt ")) textures.add(splitToVector2(line));
 
-				else if (line.startsWith("vn "))
-					normals.add(splitToVector(line));
+				else if (line.startsWith("vn ")) normals.add(splitToVector(line));
 
 				else if (line.startsWith("f ")) {
 					String[] face = line.split(" ");
@@ -121,11 +118,9 @@ public class OBJLoader {
 			if (vtn.length == 3) {
 				vId = Integer.valueOf(vtn[0]) - 1;
 
-				if (!vtn[1].isEmpty())
-					tId = Integer.valueOf(vtn[1]) - 1;
+				if (!vtn[1].isEmpty()) tId = Integer.valueOf(vtn[1]) - 1;
 
-				if (!vtn[2].isEmpty())
-					nId = Integer.valueOf(vtn[2]) - 1;
+				if (!vtn[2].isEmpty()) nId = Integer.valueOf(vtn[2]) - 1;
 			}
 		}
 

@@ -43,6 +43,7 @@ public class FolderLoader {
 
 		// No separator, it's a debug environment.
 		else {
+			System.out.println(path);
 			getAllFilesDev(path, out, suffixes);
 		}
 
@@ -66,10 +67,8 @@ public class FolderLoader {
 		while (reader.ready()) {
 			String name = path + reader.readLine();
 
-			if (endsWith(name, suffixes))
-				out.add(name);
-			else
-				getAllFilesDev(name, out, suffixes);
+			if (endsWith(name, suffixes)) out.add(name);
+			else getAllFilesDev(name, out, suffixes);
 		}
 
 		reader.close();

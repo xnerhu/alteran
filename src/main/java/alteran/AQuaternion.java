@@ -111,4 +111,30 @@ public class AQuaternion {
 	public Quaternion toQuaternion() {
 		return new Quaternion(x, y, z, w);
 	}
+
+	public float[][] toRotationMatrix() {
+
+		float norm = (float) dot(this);
+		// we explicitly test norm against one here, saving a division
+		// at the cost of a test and branch. Is it worth it?
+		float s = (norm == 1f) ? 2f : (norm > 0f) ? 2f / norm : 0;
+
+		// compute xs/ys/zs first to save 6 multiplications, since xs/ys/zs
+		// will be used 2-4 times each.
+		float xs = x * s;
+		float ys = y * s;
+		float zs = z * s;
+		float xx = x * xs;
+		float xy = x * ys;
+		float xz = x * zs;
+		float xw = w * xs;
+		float yy = y * ys;
+		float yz = y * zs;
+		float yw = w * ys;
+		float zz = z * zs;
+		float zw = w * zs;
+
+		// using s=2/norm (instead of 1/norm) saves 9 multiplications by 2 here
+		return new float[][]{{1 - (yy + zz), (xy - zw), (xz + yw)}, {(xy + zw), 1 - (xx + zz), (yz - xw)}, {(xz - yw), (yz + xw), 1 - (xx + yy)}};
+	}
 }

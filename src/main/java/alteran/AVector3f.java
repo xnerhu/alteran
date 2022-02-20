@@ -79,6 +79,10 @@ public class AVector3f {
 		return (float) Math.sqrt(squaredLength());
 	}
 
+	public float distance(AVector3f vector) {
+		AVector3f difference = substract(vector);
+		return (float) Math.sqrt(Math.pow(difference.x, 2f) + Math.pow(difference.y, 2f) + Math.pow(difference.z, 2f));
+	}
 
 	@Override
 	public String toString() {

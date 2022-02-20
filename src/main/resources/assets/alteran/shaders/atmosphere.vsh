@@ -1,19 +1,23 @@
-#version 330 core
+#version 330
 
-in vec3 vPosition;
-// in vec3 vNormal;
+in vec3 position;
+layout(location = 1) in vec3 normal;
+layout(location = 2) in vec2 texCoordIn;
 
-uniform mat4 modelview;
+uniform mat4 modelView;
 uniform mat4 projection;
+uniform mat4 model;
 
-//out vec4 fPosition;
-//out mat4 mv;
-//out vec3 fNormal;
+uniform mat4 viewInverseMat;
+
+out vec3 FragPos;
+out vec3 pos;
+out vec2 texCoord;
 
 void main()
 {
-    //fPosition = vPosition;
-	//fNormal = vNormal;
-    //mv = modelview;
-	gl_Position = projection*modelview*vec4(vPosition, 1.0);
+    gl_Position = projection * modelView * vec4(position, 1.0);
+    FragPos = (viewInverseMat * vec4(position, 1.0)).xyz;
+    pos = gl_Position.xyz;
+    texCoord = texCoordIn;
 }
